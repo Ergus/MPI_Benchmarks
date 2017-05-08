@@ -2,6 +2,7 @@
 #ifndef matmul_h
 #define  matmul_h
 
+// C headers
 #include <mpi.h>
 #include <omp.h>
 #include <stdio.h>
@@ -10,8 +11,8 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define min(x, y) (((x) < (y)) ? (x) : (y))
-#define max(x, y) (((x) > (y)) ? (x) : (y))
+#define imin(x, y) (((x) < (y)) ? (x) : (y))
+#define imax(x, y) (((x) > (y)) ? (x) : (y))
 
 #define frand()(4.*(double)rand()/(RAND_MAX)-2.) //uniform rng in [-2,2]
 

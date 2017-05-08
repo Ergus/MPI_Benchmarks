@@ -1,11 +1,22 @@
-
 #include "matmul-mpi.h"
+
+// Common local headers
+#include "Report.hpp"
+#include "Reportable.hpp"
+#include "Timer.hpp"
 
 int main(int argc, char** argv){
 
     size_t dim, N;
-    sscanf(argv[1], "%zu", &dim);
-    sscanf(argv[2], "%zu", &N);
+    bool printfiles=(argc==4);
+
+    int arg1= sscanf(argv[1], "%zu", &dim);
+    int arg2= sscanf(argv[2], "%zu", &N);
+
+    if( arg1<1 || arg2<1 ){
+        printf("Input parameters error\n");
+        abort();
+        }
     
     Initialize(&argc, &argv, dim, N);
     
@@ -27,6 +38,10 @@ int main(int argc, char** argv){
     // Initialise arrays local portions
     init(lA,_env.ldim,dim);
     init(lB,_env.ldim,dim);
+
+    Timer timer("algorithm_time", "Execution time");
+    
+    if (_env.rank==0) timer.start();
     
     // Gather B to all
     MPI_Allgather(MPI_IN_PLACE, nels, MPI_DOUBLE,
@@ -34,18 +49,6 @@ int main(int argc, char** argv){
 
     // Multiplication
     matmul(lA,B,C,_env.ldim,dim);
-
-    // Gather A to its printer
-    if(_env.IprintA){
-        MPI_Gather(MPI_IN_PLACE, nels, MPI_DOUBLE,
-                   A, nels, MPI_DOUBLE,
-                   _env.rank, MPI_COMM_WORLD);
-        }
-    else{
-        MPI_Gather(A, nels, MPI_DOUBLE,
-                   NULL, nels, MPI_DOUBLE,
-                   min(2,_env.worldsize-1), MPI_COMM_WORLD);
-        }
 
     // Gather C to root
     if(_env.IprintC){
@@ -58,10 +61,27 @@ int main(int argc, char** argv){
                    NULL, nels, MPI_DOUBLE,
                    0, MPI_COMM_WORLD);
         }
+    timer.stop();
 
-    printmatrix(A, _env.dim, "matrix");
-    printmatrix(B, _env.dim, "matrix");
-    printmatrix(C, _env.dim, "matrix");
+    // Gather A to its printer
+    if(_env.IprintA){
+        MPI_Gather(MPI_IN_PLACE, nels, MPI_DOUBLE,
+                   A, nels, MPI_DOUBLE,
+                   _env.rank, MPI_COMM_WORLD);
+        }
+    else{
+        MPI_Gather(A, nels, MPI_DOUBLE,
+                   NULL, nels, MPI_DOUBLE,                       
+                       imin(2,_env.worldsize-1), MPI_COMM_WORLD);
+        }
+
+    if(_env.rank==0) Report::emit();
+
+    if(printfiles){
+        printmatrix(A, _env.dim, "matrix");
+        printmatrix(B, _env.dim, "matrix");
+        printmatrix(C, _env.dim, "matrix");
+        }
 
     free(C);
     free(B);

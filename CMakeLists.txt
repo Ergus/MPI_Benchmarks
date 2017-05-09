@@ -28,5 +28,5 @@ FOREACH(thedir ${dirlist})
   ADD_SUBDIRECTORY(${thedir})
 ENDFOREACH()
 
-
+SET(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build/install)
 

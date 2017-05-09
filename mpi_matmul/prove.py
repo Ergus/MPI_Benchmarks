@@ -17,7 +17,7 @@ def main(args):
     C2=A.dot(B)
     L1=np.amax(np.abs(C-C2))
 
-    if (L1>1E-6):        
+    if (L1>1E-5):        
         print("Arrays don't match by: ", L1)
         print("A: \n", A)
         print("B: \n", B)

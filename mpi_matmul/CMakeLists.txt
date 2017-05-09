@@ -5,6 +5,11 @@ TARGET_LINK_LIBRARIES(matmul_mpi common)
 # Run test
 ADD_TEST(NAME Test_Matmul_run COMMAND mpirun -np 4 matmul_mpi 16 8 true)  
 
+# Submitter scripts
+CONFIGURE_FILE(submit-matmul.sh submit-matmul.sh COPYONLY)
+CONFIGURE_FILE(profile-matmul.sh profile-matmul.sh COPYONLY)
+CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)
+
 # python test
 IF(PYTHONINTERP_FOUND)
   CONFIGURE_FILE(prove.py prove.py)  
@@ -13,3 +18,4 @@ IF(PYTHONINTERP_FOUND)
 ELSE()
   MESSAGE("Python interpreter not found")
 ENDIF(PYTHONINTERP_FOUND)
+

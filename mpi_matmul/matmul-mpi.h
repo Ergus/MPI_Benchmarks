@@ -63,10 +63,10 @@ extern "C" {
 
     void Finalize();
 
+    #define printmatrix(mat, dim, pref) {__print(mat, dim, #mat, pref); printf("printed %s\n", #mat); }
+
 #ifdef __cplusplus
 }
 #endif
-
-#define printmatrix(mat, dim, pref) __print(mat, dim, #mat, pref);
 
 #endif

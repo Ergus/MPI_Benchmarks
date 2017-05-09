@@ -23,7 +23,12 @@ void Initialize(int *argc, char ***argv, size_t dim, size_t N){
     _env.first_local_thread = _env.rank * lthreads; // first local thread id
         
     _env.ldim = dim/_env.worldsize;     // rows for local process
-    modcheck(_env.ldim, _env.lthreads); // ldim % lthreads == 0 
+    modcheck(_env.ldim, _env.lthreads); // ldim % lthreads == 0
+
+    printf("printer for A: %d, B: %d, C: %d\n",
+           imin(2,_env.worldsize-1),
+           imin(1,_env.worldsize-1),
+           imin(0,_env.worldsize-1));
 
     _env.IprintA = (imin(2,_env.worldsize-1)==_env.rank); // prints A
     _env.IprintB = (imin(1,_env.worldsize-1)==_env.rank); // prints B
@@ -74,12 +79,11 @@ void __print(double* mat, size_t dim, const char *name, const char* prefix){
              ( _env.IprintC && (strcmp(name,"C")==0) )
             ){
 
-            FILE *fp=stdout;
-            if(prefix){
-                char filename[31];
-                sprintf(filename,"%s_%s.mat", prefix, name);
-                fp = fopen(filename, "w+");
-                }
+            printf("Printing %s in process %d\n",name,_env.rank);
+            
+            char filename[128];
+            sprintf(filename,"%s_%s.mat", prefix, name);
+            FILE* fp = fopen(filename, "w+");            
             myassert(fp);
 
             fprintf(fp, "# name: %s\n", name);
@@ -93,7 +97,7 @@ void __print(double* mat, size_t dim, const char *name, const char* prefix){
                     }
                 fprintf(fp,"\n");
                 }
-            fclose(fp);            
+            fclose(fp);
             }        
         }
     }

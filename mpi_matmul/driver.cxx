@@ -18,8 +18,9 @@ int main(int argc, char** argv){
     CommandLineParameter<string> clprefix("prefix", "prefix", "prefix for files");
     CommandLine::validate();
 
-    string prefix=clprefix;
+    const string prefix=clprefix;
 
+    printf("Initialization in process %d\n", _env.rank);
     Initialize(&argc, &argv, dim, N);
     
     const size_t nels = _env.ldim*dim;  //local elements to multiply
@@ -28,6 +29,8 @@ int main(int argc, char** argv){
     const size_t dimB = dim;            // Everybody has full B
     const size_t dimC = (_env.IprintC ? dim : _env.ldim);
 
+    printf("In process: %d dimA=%lu dimB=%lu dimC=%lu\n",_env.rank, dimA, dimB, dimC);
+    printf("Allocating Memory in process %d\n", _env.rank);
     // Allocate memory
     double* A = (double*) malloc( dimA*dim*sizeof(double));
     double* B = (double*) malloc( dimB*dim*sizeof(double));
@@ -42,17 +45,19 @@ int main(int argc, char** argv){
     init(lB,_env.ldim,dim);
 
     Timer timer("algorithm_time", "Execution time");
-    
-    if (_env.rank==0) timer.start();
-    
+
+    printf("Call Allgather in process %d\n", _env.rank);
+    if (_env.rank==0) timer.start();    
     // Gather B to all
     MPI_Allgather(MPI_IN_PLACE, nels, MPI_DOUBLE,
                   B, nels, MPI_DOUBLE, MPI_COMM_WORLD);
 
     // Multiplication
+    printf("Multiplication %d\n", _env.rank);
     matmul(lA,B,C,_env.ldim,dim);
 
     // Gather C to root
+    printf("Call C Gather in process %d\n", _env.rank);
     if(_env.IprintC){
         MPI_Gather(MPI_IN_PLACE, nels, MPI_DOUBLE,
                    C, nels, MPI_DOUBLE,
@@ -66,6 +71,7 @@ int main(int argc, char** argv){
     timer.stop();
 
     // Gather A to its printer
+    printf("Call A Gather in process %d\n", _env.rank);
     if(_env.IprintA){
         MPI_Gather(MPI_IN_PLACE, nels, MPI_DOUBLE,
                    A, nels, MPI_DOUBLE,
@@ -77,11 +83,14 @@ int main(int argc, char** argv){
                        imin(2,_env.worldsize-1), MPI_COMM_WORLD);
         }
 
-    if(_env.rank==0) Report::emit();
+    if(_env.rank==0) Report::emit();    
 
+    printf("Printing Matrices in process %d\n", _env.rank);
     printmatrix(A, _env.dim, prefix.c_str());
     printmatrix(B, _env.dim, prefix.c_str());
     printmatrix(C, _env.dim, prefix.c_str());
+
+    printf("Freeing Memory in process %d\n", _env.rank);
 
     free(C);
     free(B);

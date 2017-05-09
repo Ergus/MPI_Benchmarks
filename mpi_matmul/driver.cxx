@@ -1,23 +1,25 @@
 #include "matmul-mpi.h"
 
+#include <string>
+
 // Common local headers
+#include "CommandLineParameter.hpp"
 #include "Report.hpp"
 #include "Reportable.hpp"
 #include "Timer.hpp"
 
+using namespace std;
 int main(int argc, char** argv){
 
-    size_t dim, N;
-    bool printfiles=(argc==4);
 
-    int arg1= sscanf(argv[1], "%zu", &dim);
-    int arg2= sscanf(argv[2], "%zu", &N);
+    CommandLine::initialize(argc, argv, "mpi_matmul", "cluster");
+    CommandLineParameter<long> dim("dim", "Array size", "number of elements");
+    CommandLineParameter<long> N("N", "Threads number", "number of paralell threads");
+    CommandLineParameter<string> clprefix("prefix", "prefix", "prefix for files");
+    CommandLine::validate();
 
-    if( arg1<1 || arg2<1 ){
-        printf("Input parameters error\n");
-        abort();
-        }
-    
+    string prefix=clprefix;
+
     Initialize(&argc, &argv, dim, N);
     
     const size_t nels = _env.ldim*dim;  //local elements to multiply
@@ -77,11 +79,9 @@ int main(int argc, char** argv){
 
     if(_env.rank==0) Report::emit();
 
-    if(printfiles){
-        printmatrix(A, _env.dim, "matrix");
-        printmatrix(B, _env.dim, "matrix");
-        printmatrix(C, _env.dim, "matrix");
-        }
+    printmatrix(A, _env.dim, prefix.c_str());
+    printmatrix(B, _env.dim, prefix.c_str());
+    printmatrix(C, _env.dim, prefix.c_str());
 
     free(C);
     free(B);

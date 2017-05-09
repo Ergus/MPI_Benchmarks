@@ -6,7 +6,7 @@ TARGET_LINK_LIBRARIES(matmul_mpi common)
 ADD_TEST(NAME Test_Matmul_run COMMAND mpirun -np 4 matmul_mpi 16 8 true)  
 
 # Submitter scripts
-CONFIGURE_FILE(submit-matmul.sh submit-matmul.sh COPYONLY)
+CONFIGURE_FILE(submit.sh submit.sh COPYONLY)
 CONFIGURE_FILE(profile-matmul.sh profile-matmul.sh COPYONLY)
 CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)
 

@@ -4,7 +4,14 @@
 
 // C headers
 #include <mpi.h>
-#include <omp.h>
+
+#ifdef _OPENMP
+   #include <omp.h>
+#else
+   #define omp_get_thread_num() 0
+   #define omp_set_num_threads(var) {}
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

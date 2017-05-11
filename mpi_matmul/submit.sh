@@ -1,7 +1,7 @@
 #!/bin/bash
 #BSUB -n NODES
 #BSUB -R "span[ptile=1]"
-#BSUB -J EXEC_DIM_NODES
+#BSUB -J EXEC_NODES
 #BSUB -W 00:30
 #BSUB -M 64000
 #BSUB -C 10000000

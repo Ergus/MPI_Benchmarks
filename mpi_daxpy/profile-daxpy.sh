@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 4 ]]; then
-    echo "Usage: $0 executable matrix_dim iterations local_threads alpha"
+    echo "Usage: $0 executable vector_dim iterations local_threads alpha"
     exit 1
 fi
 
@@ -11,7 +11,7 @@ iters=$3
 lthreads=$4
 alpha=$5
 
-outdir="output_${exec}_${dim}_${iters}_$(date +%a%d%m%Y_%H%M)"
+outdir="output_${exec}_${dim}_${lthreads}_${iters}_$(date +%a%d%m%Y_%H%M)"
 mkdir -p $outdir
 
 statsfile="${outdir}/times.res"

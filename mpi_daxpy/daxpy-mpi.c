@@ -15,20 +15,27 @@ void Initialize(int *argc, char ***argv, size_t dim, size_t N){
     modcheck(N, _env.worldsize);   // threads % processes == 0
     
     _env.dim=dim;
-    _env.tthreads=N;
-    
-    const size_t lthreads = N/_env.worldsize;
 
-    _env.lthreads =  lthreads;           // threads per process
+    #ifdef _OPENMP
+    _env.tthreads=N;
+    printf("Con OpenMP\n");   
+    #else
+    _env.tthreads=_env.worldsize;
+    printf("Sin OpenMP\n");
+    #endif
+    
+    const size_t lthreads = _env.tthreads/_env.worldsize;
+
+    omp_set_num_threads(lthreads);                  // this is an empty macro if no OpenMP
+    
+    _env.lthreads =  lthreads;                      // threads per process
     _env.first_local_thread = _env.rank * lthreads; // first local thread id
         
-    _env.ldim = dim/_env.worldsize;     // elements for local process
-    modcheck(_env.ldim, _env.lthreads); // ldim % lthreads == 0
+    _env.ldim = dim/_env.worldsize;                 // elements for local process
+    modcheck(_env.ldim, _env.lthreads);             // ldim % lthreads == 0
 
     _env.IprintX = (imin(1,_env.worldsize-1)==_env.rank); // prints Y
-    
-    omp_set_num_threads(lthreads);
-    
+        
     }
 
 

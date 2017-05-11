@@ -1,21 +1,30 @@
 # Compilation
-ADD_EXECUTABLE(daxpy-gather driver.cxx daxpy-mpi.c)
-TARGET_LINK_LIBRARIES(daxpy-gather common)
+ADD_EXECUTABLE(daxpy-gather-omp driver.cxx daxpy-mpi.c)
+TARGET_LINK_LIBRARIES(daxpy-gather-omp common)
 
-# Run test
-ADD_TEST(NAME Test_Daxpy_Gather COMMAND mpirun -np 4 daxpy-gather 16 8 3 vector)  
+#Secuential version
+STRING(REPLACE "-fopenmp" "" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
+STRING(REPLACE "-fopenmp" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+ADD_EXECUTABLE(daxpy-gather-sec driver.cxx daxpy-mpi.c)
+TARGET_LINK_LIBRARIES(daxpy-gather-sec common)
 
-# Submitter scripts
-CONFIGURE_FILE(submit.sh submit.sh COPYONLY)
-CONFIGURE_FILE(profile-daxpy.sh profile-daxpy.sh COPYONLY)
-CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)
+# Run tests
+ADD_TEST(NAME Test_Daxpy_Gather-opm COMMAND mpirun -np 4 daxpy-gather-omp 16 8 3 omp)
+ADD_TEST(NAME Test_Daxpy_Gather-sec COMMAND mpirun -np 4 daxpy-gather-sec 16 8 3 sec)
 
 # python test
 IF(PYTHONINTERP_FOUND)
   CONFIGURE_FILE(prove.py prove.py)  
-  ADD_TEST(NAME Test_Daxpy_Gather_results COMMAND 
-    python3 prove.py 3 vector_X.mat vector_in_Y.mat vector_out_Y.mat)
+  ADD_TEST(NAME Test_Daxpy_Gather_omp_results COMMAND 
+    python3 prove.py 3 omp_X.mat omp_in_Y.mat omp_out_Y.mat)
+  ADD_TEST(NAME Test_Daxpy_Gather_sec_results COMMAND 
+    python3 prove.py 3 omp_X.mat omp_in_Y.mat omp_out_Y.mat)
 ELSE()
   MESSAGE("Python interpreter not found")
 ENDIF(PYTHONINTERP_FOUND)
+
+# Submitter scripts
+CONFIGURE_FILE(submit.sh submit.sh COPYONLY)
+CONFIGURE_FILE(profile-daxpy.sh profile-daxpy.sh COPYONLY)
+CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/mpi_matmul/gnuplot.plt gnuplot.plt COPYONLY)
 

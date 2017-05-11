@@ -10,7 +10,7 @@ dim=$2
 iters=$3
 lthreads=$4
 
-outdir="output_${exec}_${dim}_${iters}_$(date +%a%d%m%Y_%H%M)"
+outdir="output_${exec}_${dim}_${lthreads}_${iters}_$(date +%a%d%m%Y_%H%M)"
 mkdir -p $outdir
 
 statsfile="${outdir}/times.res"

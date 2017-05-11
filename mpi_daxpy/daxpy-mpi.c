@@ -1,5 +1,5 @@
 
-#include "matmul-mpi.h"
+#include "daxpy-mpi.h"
 
 envinfo _env;
 
@@ -22,17 +22,10 @@ void Initialize(int *argc, char ***argv, size_t dim, size_t N){
     _env.lthreads =  lthreads;           // threads per process
     _env.first_local_thread = _env.rank * lthreads; // first local thread id
         
-    _env.ldim = dim/_env.worldsize;     // rows for local process
+    _env.ldim = dim/_env.worldsize;     // elements for local process
     modcheck(_env.ldim, _env.lthreads); // ldim % lthreads == 0
 
-    printf("printer for A: %d, B: %d, C: %d\n",
-           imin(2,_env.worldsize-1),
-           imin(1,_env.worldsize-1),
-           imin(0,_env.worldsize-1));
-
-    _env.IprintA = (imin(2,_env.worldsize-1)==_env.rank); // prints A
-    _env.IprintB = (imin(1,_env.worldsize-1)==_env.rank); // prints B
-    _env.IprintC = (0==_env.rank);                       // prints C
+    _env.IprintX = (imin(1,_env.worldsize-1)==_env.rank); // prints Y
     
     omp_set_num_threads(lthreads);
     
@@ -43,9 +36,8 @@ void Finalize(){
     MPI_Finalize();
     }
 
-void init(double* array, size_t rows, size_t cols){
+void init(double* array, size_t ldim){
 
-    const size_t fullsize=rows*cols;    
     const size_t start = _env.first_local_thread;
     
     #pragma omp parallel
@@ -54,30 +46,24 @@ void init(double* array, size_t rows, size_t cols){
         srand(start+id);
         
         #pragma omp for
-        for(size_t i=0; i<fullsize; ++i){
+        for(size_t i=0; i<ldim; ++i){
             array[i] = frand();
             }        
         }
     }
 
-void matmul(double *A, double *B, double *C, int rows, int cols){
+void daxpy(double *lY,double a,double *X,size_t ldim){  // remember this is Y+=a*X
     #pragma omp parallel for
-    for(size_t i=0; i<rows; ++i){
-        for(size_t j=0; j<cols; ++j){
-            const double temp=A[i*cols+j];
-            for(size_t k=0; k<cols; ++k){
-                C[i*cols+k]+= (temp*B[j*cols+k]);
-                }
-            }
-        }    
+    for(size_t i=0;i<ldim;++i){
+        lY[i]+= a*X[i];
+        }
     }
 
 void __print(double* mat, size_t dim, const char *name, const char* prefix){
 
     if(_env.rank<3){
-        if ( ( _env.IprintA && (strcmp(name,"A")==0) ) ||
-             ( _env.IprintB && (strcmp(name,"B")==0) ) ||
-             ( _env.IprintC && (strcmp(name,"C")==0) )
+        if ( ( (_env.rank==0) && (strcmp(name,"Y")==0) ) ||
+             (  _env.IprintX  && (strcmp(name,"X")==0) )
             ){
 
             printf("Printing %s in process %d\n",name,_env.rank);
@@ -89,17 +75,15 @@ void __print(double* mat, size_t dim, const char *name, const char* prefix){
 
             fprintf(fp, "# name: %s\n", name);
             fprintf(fp, "# type: matrix\n");
-            fprintf(fp, "# rows: %lu\n", dim);
+            fprintf(fp, "# rows: 1\n");
             fprintf(fp, "# columns: %lu\n", dim);
         
             for(int i=0; i<dim; ++i) {
-                for(int j=0; j<dim; ++j) {
-                    fprintf(fp, "%3.8lf ", mat[i*dim+j]);
-                    }
-                fprintf(fp,"\n");
+                fprintf(fp, "%3.8lf ", mat[i]);
                 }
+            printf("\n");
             fclose(fp);
-            }        
+            }
         }
     }
 

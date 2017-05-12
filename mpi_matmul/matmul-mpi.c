@@ -69,7 +69,7 @@ void matmul(double *A, double *B, double *C, int rows, int cols){
                 C[i*cols+k]+= (temp*B[j*cols+k]);
                 }
             }
-        }    
+        }
     }
 
 void __print(double* mat, size_t dim, const char *name, const char* prefix){

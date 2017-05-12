@@ -51,7 +51,7 @@ void init(double* array, size_t ldim){
     {
         const size_t id = omp_get_thread_num();
         srand(start+id);
-        
+        printf("Threads process: %d\n",_env.rank);
         #pragma omp for
         for(size_t i=0; i<ldim; ++i){
             array[i] = frand();

@@ -50,8 +50,8 @@ int main(int argc, char** argv){
                    NULL, ldim, MPI_DOUBLE,
                    0, MPI_COMM_WORLD);
         }
-    //string tmppref=prefix+"_in";
-    //printmatrix(Y, _env.dim, tmppref.c_str());
+    string tmppref=prefix+"_in";
+    printmatrix(Y, _env.dim, tmppref.c_str());
 
     Timer timer("algorithm_time", "Execution time");
     
@@ -87,9 +87,9 @@ int main(int argc, char** argv){
     if(_env.rank==0) Report::emit();    
 
     printf("Printing Matrices in process %d\n", _env.rank);
-    //tmppref=prefix+"_out";
-    //printmatrix(Y, _env.dim, tmppref.c_str());    
-    //printmatrix(X, _env.dim, prefix.c_str());
+    tmppref=prefix+"_out";
+    printmatrix(Y, _env.dim, tmppref.c_str());    
+    printmatrix(X, _env.dim, prefix.c_str());
 
     printf("Freeing Memory in process %d\n", _env.rank);
     free(Y);

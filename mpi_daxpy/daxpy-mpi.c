@@ -67,7 +67,7 @@ void daxpy(double *lY,double a,double *X,size_t ldim){  // remember this is Y+=a
 
 void __print(double* mat, size_t dim, const char *name, const char* prefix){
 
-    if(_env.rank<3){
+    if(_env.rank<3 && dim<=512){
         if ( ( (_env.rank==0) && (strcmp(name,"Y")==0) ) ||
              (  _env.IprintX  && (strcmp(name,"X")==0) )
             ){

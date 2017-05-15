@@ -25,17 +25,11 @@ void Initialize(int *argc, char ***argv, size_t dim, size_t N){
     _env.ldim = dim/_env.worldsize;     // rows for local process
     modcheck(_env.ldim, _env.lthreads); // ldim % lthreads == 0
 
-    printf("printer for A: %d, B: %d, C: %d\n",
-           imin(2,_env.worldsize-1),
-           imin(1,_env.worldsize-1),
-           imin(0,_env.worldsize-1));
-
     _env.IprintA = (imin(2,_env.worldsize-1)==_env.rank); // prints A
     _env.IprintB = (imin(1,_env.worldsize-1)==_env.rank); // prints B
     _env.IprintC = (0==_env.rank);                       // prints C
     
-    omp_set_num_threads(lthreads);
-    
+    omp_set_num_threads(lthreads);    
     }
 
 

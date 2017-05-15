@@ -58,6 +58,7 @@ int main(int argc, char** argv){
     if (_env.rank==0) timer.start();
 
     daxpy(Y,a,lX,ldim);  // remember this is Y+=a*X
+    timer.stop();
 
     if(_env.rank==0){
         MPI_Gather(MPI_IN_PLACE, ldim, MPI_DOUBLE,
@@ -69,7 +70,6 @@ int main(int argc, char** argv){
                    NULL, ldim, MPI_DOUBLE,
                    0, MPI_COMM_WORLD);
         }
-    timer.stop();
 
     // Gather A to its printer
     printf("Gather for Y to print in process %d\n",_env.rank);    

@@ -5,15 +5,17 @@
 #include <vector>
 #include <thread>
 
-typedef std::vector<MPI_Comm> vCom;
-
 typedef struct Node_t{
-    vCom inter, intra;                   // vector with all inter and intra communicators
-    int nargc;
+    MPI_Comm intra, parent;           // communicators
+    int wsize, wrank;                 // environment 
+    int nargc;                             
     char** nargv;
-    MPI_Comm parentcomm;                 // Parent communicator, in init time always
-    int wsize, wrank;    
   } Node_t;
+
+enum msg_tag{
+  TAG_EXIT=0,
+  TAG_SPAWN=1,
+  };
 
 typedef struct msg_t{
     int value;
@@ -21,65 +23,73 @@ typedef struct msg_t{
 
 Node_t Node;
 
+// This is called only in the master
 int spawn_merge_parent(const char* exec, char** args, int n){
   
   MPI_Comm newintra = MPI_COMM_NULL;
   MPI_Comm newinter = MPI_COMM_NULL;
   const int wsize=Node.wsize;
   const int wrank=Node.wrank;
-  int errcode=-1;
+  int *errcode=(int*) malloc(n*sizeof(int));
+  int success=0;
 
-  if((wrank==0) && (wsize>1)){
+  // first send message if there are remotes
+  if((wrank==0)&&(wsize>1)){
     msg_t msg={n};
     
-    MPI_Request request[wsize-1];
-    
     for(int i=1;i<wsize;++i){
-      fprintf(stderr,"Process %d send %d to %d in world %d\n", wrank, msg.value,i,wsize);
-      //MPI_Isend(&msg, sizeof(msg_t), MPI_BYTE, i, 5, Node.intra.back(), &request[i-1]);
-      //MPI_Request_free(&request[i-1]);
-      MPI_Send(&msg, sizeof(msg_t), MPI_BYTE, i, 1, Node.intra.back());
-
+      fprintf(stderr,"%d--(%d)-->%d (world %d)\n",wrank,msg.value,i,wsize);
+      MPI_Send(&msg, sizeof(msg_t), MPI_BYTE, i, TAG_SPAWN, Node.intra);
       }
-
-    //MPI_Waitall(wsize-1, request, MPI_STATUSES_IGNORE);
     }
 
+  // Spawn now
   fprintf(stderr, "Process %d Spawning in world %d\n", wrank, wsize);
-  MPI_Comm_spawn( exec, args, 1, MPI_INFO_NULL, 0, Node.intra.back(), &newinter, &errcode);
+  MPI_Comm_spawn(exec, args, n, MPI_INFO_NULL, 0, Node.intra, &newinter, errcode);
+  for(int i=0; i<n; ++i){
+    if(errcode[i]!=MPI_SUCCESS){
+      fprintf(stderr,"Error: In %d spawning %d in world %d\n",wrank,i, wsize);
+      continue;
+      }
+    ++success;
+    }
+  free(errcode);
+  
   MPI_Intercomm_merge(newinter, false, &newintra);
+  
+  if(Node.intra != MPI_COMM_WORLD)
+    MPI_Comm_free(&Node.intra);
 
-  Node.inter.push_back(newinter);
-  Node.intra.push_back(newintra);
-  MPI_Comm_size(newintra, &Node.wsize);
-
+  Node.intra = newintra;
+  MPI_Comm_size(newintra, &Node.wsize);  
+  MPI_Comm_free(&newinter);
   fprintf(stderr,"Ending spawn in %d\n", Node.wrank);
-  return errcode;
+  return success;
   }
 
 void stopall(){
   msg_t msg={0};
   
   for(int i=Node.wsize-1; i>0 ;i--){
-    fprintf(stderr,"Process: %d Sending stop to %d\n",Node.wrank,i);
-    MPI_Send(&msg, sizeof(msg_t), MPI_BYTE, i, 5, Node.intra.back());
+    fprintf(stderr,"%d--(%d)-->%d (world %d)\n",
+            Node.wrank,msg.value,i,Node.wsize);
+    MPI_Send(&msg, sizeof(msg_t), MPI_BYTE, i, 5, Node.intra);
     }
   }
   
 
 void listener(){
-  int delta=0;
 	int ret, flag, count;
 	MPI_Status status;
   msg_t msg;
 
-  fprintf(stderr, "Process %d listening on world %d\n", Node.wrank, Node.wsize);
+  fprintf(stderr, "Process %d listening\n", Node.wrank);
   
   while(true){
     // Prove the message first
-    if ((ret = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, Node.intra.back(), &status))) {
+    if ((ret = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, Node.intra, &status))) {
       fprintf(stderr, "Error probing for messages\n");
-      MPI_Abort(Node.intra.back(), ret);
+      MPI_Abort(Node.intra, ret);
       }
     
     if (!flag){
@@ -90,29 +100,33 @@ void listener(){
     // Determine size in bytes
     if ((ret = MPI_Get_count(&status, MPI_BYTE, &count))) {
       fprintf(stderr, "Error while determining message's size\n");
-      MPI_Abort(Node.intra.back(), ret);
+      MPI_Abort(Node.intra, ret);
       }
     assert(count!=0);
 
     // Now receive the message
-    if ((ret = MPI_Recv(&msg, count, MPI_BYTE, status.MPI_SOURCE, status.MPI_TAG, Node.intra.back(), MPI_STATUS_IGNORE))) {
+    if ((ret = MPI_Recv(&msg, count, MPI_BYTE, status.MPI_SOURCE, status.MPI_TAG, Node.intra, MPI_STATUS_IGNORE))) {
       fprintf(stderr, "Error while receiving message\n");
-      MPI_Abort(Node.intra.back(), ret);
+      MPI_Abort(Node.intra, ret);
       }
 
-    delta=msg.value;
-
-    fprintf(stderr, "Process %d received %d from %d\n", Node.wrank, delta, status.MPI_SOURCE);
+    fprintf(stderr, "Process %d<--(%d)--%d\n",
+            Node.wrank, msg.value, status.MPI_SOURCE);
+    
+    int delta=msg.value;
     
     if(delta>0){
-      fprintf(stderr,"Received %d in %d: Spawing\n",delta, Node.wrank);
+      fprintf(stderr,"Process %d: Spawing (world %d)\n",
+              Node.wrank, Node.wsize);
       spawn_merge_parent(Node.nargv[0], &Node.nargv[1], delta);
       }
     else if(delta<0){
-      fprintf(stderr,"Received %d in %d: Negative values not supported yet\n",delta, Node.wrank);
+      fprintf(stderr,"Process %d: No action negative not supported yet\n",
+              Node.wrank);
       }
     else if(delta==0){
-      fprintf(stderr,"Received %d in %d: Exiting\n",delta, Node.wrank);
+      fprintf(stderr,"Process %d: Exit listening (world %d)\n",
+              Node.wrank, Node.wsize);
       break;
       }
     }
@@ -124,54 +138,55 @@ int main( int argc, char *argv[] ){
   int provided;
   
   MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  Node.nargc=argc;
+  Node.nargv=argv;
   
-  MPI_Comm_get_parent( &Node.parentcomm ); // Parent
+  if(provided != MPI_THREAD_MULTIPLE){
+    fprintf(stderr,"Error in MPI initialisation\n");
+    MPI_Abort(MPI_COMM_WORLD, -1);
+    }
   
-  if (Node.parentcomm == MPI_COMM_NULL){
+  MPI_Comm_get_parent( &Node.parent ); // Parent
 
-    int nsp, errcodes;
+  // Test that this is the first process started with mpirun not spawned
+  if (Node.parent == MPI_COMM_NULL){
 
     // Check that we only start one master, otherwise it'll be a problem
+    Node.intra=MPI_COMM_WORLD;
     MPI_Comm_size(MPI_COMM_WORLD, &Node.wsize);
     MPI_Comm_rank(MPI_COMM_WORLD, &Node.wrank);
-    
-    if((Node.wsize!=1) || (argc==1)){ // argc only for this example, remove when porting
+
+    // Test that only one mpi process was started (general)
+    // Test that at least one argument was given (specific)
+    if((Node.wsize!=1) || (argc==1)){ 
       printf("Usage: mpirun -np 1 %s NUM_SPAWNS\n",argv[0]);    
       MPI_Abort(MPI_COMM_WORLD,1);
       }
  
-    nsp = atoi(argv[1]);
-    printf("Parent will spawn %d processes\n", nsp);
+    int nsp = atoi(argv[1]);      // Read CL arguments.
 
-    Node.nargc=argc;
-    Node.nargv=argv;
-    Node.intra.push_back(MPI_COMM_WORLD);
-
+    // Start spawning using the function
+    printf("Parent will spawn %d processes one by one\n", nsp);
     for(int i=0;i<nsp;++i){
       spawn_merge_parent(Node.nargv[0], &Node.nargv[1], 1);
       }
 
+    // Stop all remotes
     stopall();
     
     }
   else{
-
-    MPI_Comm intracomm = MPI_COMM_NULL;
-
-    Node.nargc=argc;
-    Node.nargv=argv;
+    MPI_Intercomm_merge(Node.parent, true,  &Node.intra);
     
-    MPI_Intercomm_merge(Node.parentcomm, true,  &intracomm);
-    
-    MPI_Comm_size(intracomm, &Node.wsize);
-    MPI_Comm_rank(intracomm, &Node.wrank);
-    Node.inter.push_back(Node.parentcomm);
-    Node.intra.push_back(intracomm);
+    MPI_Comm_size(Node.intra, &Node.wsize);
+    MPI_Comm_rank(Node.intra, &Node.wrank);
 
     std::thread t1(listener);
     t1.join();
     }
 
+  MPI_Comm_free(&Node.intra); 
+  fprintf(stderr,"Process %d: Exit (world %d)\n",Node.wrank,Node.wsize);
   fflush(stdout);
   MPI_Finalize();
 

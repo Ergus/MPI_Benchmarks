@@ -57,8 +57,7 @@ int spawn_merge_parent(const char* exec, char** args, int n){
   
   MPI_Intercomm_merge(newinter, false, &newintra);
   
-  if(Node.intra != MPI_COMM_WORLD)
-    MPI_Comm_free(&Node.intra);
+  MPI_Comm_free(&Node.intra);
 
   Node.intra = newintra;
   MPI_Comm_size(newintra, &Node.wsize);  
@@ -132,11 +131,11 @@ void listener(){
     }
   }
 
+
 // Start the main
-int main( int argc, char *argv[] ){
+int main( int argc, char **argv ){
 
   int provided;
-  
   MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &provided);
   Node.nargc=argc;
   Node.nargv=argv;
@@ -152,9 +151,9 @@ int main( int argc, char *argv[] ){
   if (Node.parent == MPI_COMM_NULL){
 
     // Check that we only start one master, otherwise it'll be a problem
-    Node.intra=MPI_COMM_WORLD;
-    MPI_Comm_size(MPI_COMM_WORLD, &Node.wsize);
-    MPI_Comm_rank(MPI_COMM_WORLD, &Node.wrank);
+    MPI_Comm_dup(MPI_COMM_WORLD, &Node.intra);
+    MPI_Comm_size(Node.intra, &Node.wsize);
+    MPI_Comm_rank(Node.intra, &Node.wrank);
 
     // Test that only one mpi process was started (general)
     // Test that at least one argument was given (specific)

@@ -44,18 +44,18 @@ void Node_slave::listen(){
       MPI_Abort(intra, ret);
       }
 
-    fprintf(stderr, "%d<--(%d)--%d\n", wrank, msg.value, status.MPI_SOURCE);
+    fprintf(stderr, "%d<--(%d)--%d\n", wrank, msg.type, status.MPI_SOURCE);
     
-    int delta=msg.value;
+    const msg_tag type=msg.type;
     
-    if(delta>0){
+    if(type==TAG_SPAWN){
       fprintf(stderr,"Process %d: Spawing (world %d)\n", wrank, wsize);
-      spawn_merge(delta);
+      spawn_merge(msg.number);
       }
-    else if(delta<0){
+    else if(type==TAG_REDUCE){
       fprintf(stderr,"Process %d: No action negative not supported yet\n", wrank);
       }
-    else if(delta==0){
+    else if(type==TAG_EXIT){
       fprintf(stderr,"Process %d: Exit listening (world %d)\n", wrank, wsize);
       break;
       }

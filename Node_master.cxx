@@ -32,36 +32,59 @@ Node_master::~Node_master(){
   stopall();        // Stop all remotes
   }
 
+int Node_master::send_to_remotes(msg_t msg){
 
-// Parent specific code to spawn
-int Node_master::spawn_merge(int n){
-
-  // first send message if there are remotes
-  if(wsize>1){
+  // Only send to remotes if there are any
+  if(wsize>1){    
     const int remotes=wsize-1;
-    msg_t msg={n};
-
+    // Send unblocking spawn messages to all remotes.
     MPI_Request *requests=(MPI_Request*)malloc(remotes*sizeof(MPI_Request));
     MPI_Status *statuses=(MPI_Status*)malloc(remotes*sizeof(MPI_Status));
     
     for(int i=1;i<wsize;++i){
-      fprintf(stderr,"%d--(%d)-->%d (world %d)\n",wrank,msg.value,i,wsize);
-      MPI_Isend(&msg, sizeof(msg_t), MPI_BYTE, i, TAG_SPAWN, intra, &requests[i-1]);
+      fprintf(stderr,"%d--(%d)-->%d (world %d)\n",wrank,msg.type,i,wsize);
+      MPI_Isend(&msg, sizeof(msg_t), MPI_BYTE, i, msg.type, intra, &requests[i-1]);
       }
-    MPI_Waitall(remotes, requests, statuses);
+    
+    // Check that all sends were fine.
+    if(MPI_ERR_IN_STATUS==MPI_Waitall(remotes, requests, statuses)){
+      fprintf(stderr,"Error sending unblocking message to all from %d\n",wrank);
+      for(int i=0;i<remotes;++i){
+        if(statuses[i].MPI_ERROR!=MPI_SUCCESS){
+          fprintf(stderr,"Error: %d Sending %d--(%d)-->%d (world %d) error: %d\n",
+                  statuses[i].MPI_ERROR,
+                  statuses[i].MPI_SOURCE,
+                  statuses[i].MPI_TAG,
+                  i+1,
+                  wsize);
+          }
+        }
+      return 1;
+      }
+    // Release the arrays
     free(requests);
     free(statuses);
     }
+  return 0;
+  }
 
+// Parent specific code to spawn
+int Node_master::spawn_merge(size_t n){
+
+  // first send message if there are remotes
+  if(wsize>1){
+    msg_t msg_spawn={TAG_SPAWN,n};
+    send_to_remotes(msg_spawn);
+    }
+
+  
   return Node_t::spawn_merge(n);
   }
     
  
 void Node_master::stopall(){
-  msg_t msg={0};
-  
-  for(int i=wsize-1; i>0 ;i--){
-    fprintf(stderr,"%d--(%d)-->%d (world %d)\n", wrank, msg.value, i, wsize);
-    MPI_Send(&msg, sizeof(msg_t), MPI_BYTE, i, 5, intra);
-    }
+  msg_t msg_top={TAG_EXIT,0};
+
+  send_to_remotes(msg_top);
+
   }

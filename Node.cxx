@@ -16,7 +16,7 @@ Node_t::~Node_t(){
   }
 
 //! Base spawn and merge
-int Node_t::spawn_merge(int n){                
+int Node_t::spawn_merge(size_t n){
   
   MPI_Comm newintra = MPI_COMM_NULL;           // Variable for intracomm
   MPI_Comm newinter = MPI_COMM_NULL;           // Temporal intercomm

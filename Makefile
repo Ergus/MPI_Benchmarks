@@ -15,7 +15,7 @@ dynamicOOP.x: main.cxx Manager.o Node.o Node_master.o Node_slave.o
 .PHONY: test1 test2 clean
 
 test1: ${file}
-	./dynamicOOP.x 3
+	./dynamicOOP.x 5 2
 
 test2: ${file}
 	./dynamic.x 3

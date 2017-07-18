@@ -9,10 +9,10 @@
 #include <thread>
 
 // Messages types
-enum msg_tag{    
-  TAG_REDUCE=-1,            // Delete processes
+enum msg_tag{
   TAG_EXIT=0,               // Exit
-  TAG_SPAWN=1,              // Spawn add new mpi processes
+  TAG_REDUCE=1,             // Delete processes
+  TAG_SPAWN=2,              // Spawn add new mpi processes
   };
 
 // Simplest message struct
@@ -30,32 +30,35 @@ class Node_t{
   protected:
     Node_t(int &argc, char** &argv, MPI_Comm _parent);
     
-    MPI_Comm intra, parent;     // persistent communicators
-    int wsize, wrank;           // environment MPI vars 
-    int nargc;                  // command line arguments number
-    char** nargv;               // command line arguments vars
-    virtual int spawn_merge(size_t n); //
+    MPI_Comm intra, parent;            // persistent communicators
+    int wsize, wrank;                  // environment MPI vars 
+    int nargc;                         // command line arguments number
+    char** nargv;                      // command line arguments vars
+    virtual int spawn_merge(size_t n); // spawns n new mpi processes
+    virtual int split_kill(size_t n);  // split the actual communicator and kills
+    bool listening;                    // process will listen initialised as true 
   };
 
 class Node_master:public Node_t{
   public:
     Node_master(int &argc, char** &argv, MPI_Comm _parent);
     ~Node_master();
-    void run();
-    int send_to_remotes(msg_t msg);
-  private:
-    void stopall();
-    int spawn_merge(size_t n);
     
+    void run() override;
+  private:
+    int send_to_remotes(msg_t msg);    // like a broadcast with unblocking messages 
+    void stopall();                    // kill all remotes before exiting    
+    int spawn_merge(size_t n) override;         
+    int split_kill(size_t n) override;
   };
 
 class Node_slave:public Node_t{
   public:
     Node_slave(int &argc, char** &argv, MPI_Comm _parent);
     ~Node_slave();
-    void run();
+    void run() override;
   private:
-    void listen();
+    void listen();                     // listen function, running while listening==true
   };
 
 class Manager{

@@ -19,7 +19,7 @@ void Node_slave::listen(){
 
   fprintf(stderr, "Process %d listening\n", wrank);
   
-  while(true){
+  while(listening){
     // Prove the message first
     if ((ret = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, intra, &status))) {
       fprintf(stderr, "Error probing for messages\n");
@@ -52,12 +52,13 @@ void Node_slave::listen(){
       fprintf(stderr,"Process %d: Spawing (world %d)\n", wrank, wsize);
       spawn_merge(msg.number);
       }
-    else if(type==TAG_REDUCE){
-      fprintf(stderr,"Process %d: No action negative not supported yet\n", wrank);
+    else if(type==TAG_REDUCE){     
+      fprintf(stderr,"Process %d: Reducing (world %d)\n", wrank, wsize);
+      split_kill(msg.number);
       }
     else if(type==TAG_EXIT){
       fprintf(stderr,"Process %d: Exit listening (world %d)\n", wrank, wsize);
-      break;
+      listening=false;
       }
     }
   }

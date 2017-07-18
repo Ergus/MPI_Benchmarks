@@ -8,16 +8,17 @@
 #include <vector>
 #include <thread>
 
-enum msg_tag{
+enum msg_tag{                // Messages types enum
   TAG_EXIT=0,
   TAG_SPAWN=1,
   };
 
-typedef struct msg_t{
+
+typedef struct msg_t{        // Message struct
     int value;
   } msg_t;
 
-class Node_t{
+class Node_t{                // base node class
   public:
     virtual ~Node_t();
     virtual void run()=0;
@@ -25,8 +26,8 @@ class Node_t{
   protected:
     Node_t(int &argc, char** &argv, MPI_Comm _parent);
         
-    MPI_Comm intra, parent;     // communicators
-    int wsize, wrank;           // environment 
+    MPI_Comm intra, parent;     // persistent communicators
+    int wsize, wrank;           // environment MPI vars 
     int nargc;                             
     char** nargv;
     virtual int spawn_merge(int n);

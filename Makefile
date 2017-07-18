@@ -1,4 +1,3 @@
-
 file:= dynamicOOP.x dynamic.x
 CXXFLAGS:= -std=c++0x -pthread
 

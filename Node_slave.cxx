@@ -63,5 +63,11 @@ void Node_slave::listen(){
   }
 
 void Node_slave::run(){
-  listen();
+  // Create a thread to listen incoming messages.
+  std::thread tlisten(&Node_slave::listen, this);
+
+  //Extra code goes here. Always before the join.
+
+  tlisten.join();
+  
   }

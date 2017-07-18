@@ -32,16 +32,25 @@ Node_master::~Node_master(){
   stopall();        // Stop all remotes
   }
 
+
+// Parent specific code to spawn
 int Node_master::spawn_merge(int n){
 
   // first send message if there are remotes
   if(wsize>1){
+    const int remotes=wsize-1;
     msg_t msg={n};
+
+    MPI_Request *requests=(MPI_Request*)malloc(remotes*sizeof(MPI_Request));
+    MPI_Status *statuses=(MPI_Status*)malloc(remotes*sizeof(MPI_Status));
     
     for(int i=1;i<wsize;++i){
       fprintf(stderr,"%d--(%d)-->%d (world %d)\n",wrank,msg.value,i,wsize);
-      MPI_Send(&msg, sizeof(msg_t), MPI_BYTE, i, TAG_SPAWN, intra);
+      MPI_Isend(&msg, sizeof(msg_t), MPI_BYTE, i, TAG_SPAWN, intra, &requests[i-1]);
       }
+    MPI_Waitall(remotes, requests, statuses);
+    free(requests);
+    free(statuses);
     }
 
   return Node_t::spawn_merge(n);

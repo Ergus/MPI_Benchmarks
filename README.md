@@ -9,6 +9,6 @@ The project contains 2 versions.
 
 2. dynamicOOP.x is an OOP version for the previous program. This one uses clases and typical OOP tools. It needs many other files.
 
-TODO: The current implementation only expands over many processes. the contraction still needs to be implemented.
+3. The reduction (process elimination) is implemented now from the tail always. It performs an split and then the extra processes goes to finalize.
 
 Author: Jimmy Aguilar Mena

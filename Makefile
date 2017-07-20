@@ -21,4 +21,4 @@ test2: ${file}
 	./dynamic.x 3
 
 clean:
-	rm -rf *.x *.o
+	rm -rf *.x *.o set*

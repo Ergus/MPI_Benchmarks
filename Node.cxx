@@ -38,7 +38,7 @@ int Node_t::spawn_merge(size_t n){
   free(errcode);                                // Free error codes array
   MPI_Comm_free(&intra);                        // Free old intracomm before.
   
-  MPI_Intercomm_merge(newinter, false, &newintra); // Create new intra
+`  MPI_Intercomm_merge(newinter, false, &newintra); // Create new intra
 
   intra = newintra;                              // Reassign the intra to the new one
   MPI_Comm_size(newintra, &wsize);               // update wsize

@@ -25,6 +25,7 @@ void Node_master::run(){
   for(int i=0;i<nsp;++i){
     spawn_merge(1);
     }
+  getchar();  
   split_kill(ndr);
   getchar();
   }
@@ -83,7 +84,7 @@ int Node_master::spawn_merge(size_t n){
 // Parent specific code to reduce communicator
 int Node_master::split_kill(size_t n){
   // first send message if there are remotes
-  fprintf(stderr,"Reducing %d processes (world %d)\n", wrank, wsize);
+  fprintf(stderr,"Reducing %lu processes (world %d)\n", n, wsize);
   if(wsize>1 && n<wsize-1){
     fprintf(stderr,"Sending reduce to remotes\n");
     msg_t msg_red={TAG_REDUCE,n};

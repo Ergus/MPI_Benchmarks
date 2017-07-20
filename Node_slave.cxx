@@ -49,7 +49,7 @@ void Node_slave::listen(){
     const msg_tag type=msg.type;
     
     if(type==TAG_SPAWN){
-      fprintf(stderr,"Process %d: Spawing (world %d)\n", wrank, wsize);
+      fprintf(stderr,"Process %d: Spawning (world %d)\n", wrank, wsize);
       spawn_merge(msg.number);
       }
     else if(type==TAG_REDUCE){     

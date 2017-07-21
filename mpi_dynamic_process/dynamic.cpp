@@ -78,7 +78,7 @@ void stopall(){
   
 
 void listener(){
-	int ret, flag, count;
+	int ret, count;
 	MPI_Status status;
   msg_t msg;
 
@@ -91,10 +91,6 @@ void listener(){
       MPI_Abort(Node.intra, ret);
       }
     
-    if (!flag){
-      fprintf(stderr, "Received flag wass NULL\n");
-      return;
-      }
 
     // Determine size in bytes
     if ((ret = MPI_Get_count(&status, MPI_BYTE, &count))) {

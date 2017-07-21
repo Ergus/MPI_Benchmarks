@@ -13,7 +13,7 @@ Node_slave::~Node_slave(){
   }
 
 void Node_slave::listen(){
-  int ret, flag, count;
+  int ret, count;
 	MPI_Status status;
   msg_t msg;
 
@@ -26,11 +26,6 @@ void Node_slave::listen(){
       MPI_Abort(intra, ret);
       }
     
-    if (!flag){
-      fprintf(stderr, "Received flag was NULL\n");
-      return;
-      }
-
     // Determine size in bytes
     if ((ret = MPI_Get_count(&status, MPI_BYTE, &count))) {
       fprintf(stderr, "Error while determining message's size\n");

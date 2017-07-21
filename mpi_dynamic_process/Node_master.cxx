@@ -25,9 +25,7 @@ void Node_master::run(){
   for(int i=0;i<nsp;++i){
     spawn_merge(1);
     }
-  getchar();  
   split_kill(ndr);
-  getchar();
   }
 
 Node_master::~Node_master(){

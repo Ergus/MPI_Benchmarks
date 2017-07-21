@@ -9,7 +9,7 @@ averag="awk 'function avg(ar,n,mean,  r){ \
                return sqrt(r/(n*(n-1))) } \
             BEGIN{print \"Nodes\", \"Time\", \"Error\"} \
             {if($3!=N){ \
-               if(NR>1) \
+               if(cont>0) \
                  {print N, mean/=cont, avg(vals,cont,mean)}; \
                N=$3; cont=0; mean=0}} \
             {vals[cont++]=$4; mean+=$4} \

@@ -88,38 +88,47 @@ void Node_master::stopall(){
 
   }
 
-void Node_master::automatic(){
-  // Now parse the cl options
-  int opt, value;  
-  while ((opt = getopt(nargc, nargv, "c:d:p")) != -1) {
-    switch(opt){
-      case 'c':
-        value=atoi(optarg);
-        printf("Processing %c accepted %d\n",opt, value);
-        spawn_merge(value);
-        break;
-      case 'd':
-        value=atoi(optarg);
-        printf("Processing %c accepted %d\n",opt, value);
-        split_kill(value);
-        break;
-      case 'p':
-        fflush(stderr);
-        printf("Press enter to continue\n");
-        getchar();
-        break;
-      case '?':
-        dprintf("Option %c not recognised\n",opt);
-        MPI_Abort(intra, MPI_ERR_OTHER);
-      }
+// User Interface
+void Node_master::process(char opt, int value){
+  switch(opt){
+    case 's':      
+      printf("Processing %c %d\n",opt, value);
+      spawn_merge(value);
+      break;
+    case 'd':
+      value=atoi(optarg);
+      printf("Processing %c %d\n",opt, value);
+      split_kill(value);
+      break;
+    case 'p':
+      fflush(stderr);
+      printf("Press enter to continue\n");
+      getchar();
+      break;
+    case 'i':
+      printf("This will print actual status information\n");      
+      break;
+    case '?':
+      dprintf("Option %c not recognised\n",opt);
+      MPI_Abort(intra, MPI_ERR_OTHER);
     }  
   }
 
-// Dynamic session
+// CL UI
+void Node_master::automatic(){
+  // Now parse the cl options
+  int opt, value;  
+  while ((opt = getopt(nargc, nargv, "s:d:pi")) != -1) {
+    value=atoi(optarg);
+    process(opt,value);
+    }
+  }
 
+// Dynamic session UI
 const char *character_names[] = {
-  "spawn",
-  "delete",
+  "spawn ",
+  "delete ",
+  "info",
   "exit",
   NULL
   };
@@ -138,7 +147,6 @@ char *character_name_generator(const char *text, int state){
       return strdup(name);
       }
     }
-
   return NULL;
   }
 
@@ -153,31 +161,22 @@ void Node_master::interactive(){
   char command[10];
   int value, scanned;
 
-  rl_attempted_completion_function = character_name_completion;
+  rl_attempted_completion_function = character_name_completion; //completion
   
   while((line = readline("> ")) != NULL) {
-    printf("[%s]\n", line);
     if (*line){
       add_history(line);
+      value=0;
       scanned=sscanf(line,"%s %d",command, &value);
-      if(scanned==1){
-        if(string_in(command,"exit","quit","q")){
-          break;
-          }
+      if((scanned==1 && string_in(command,"exit","info")) ||
+         (scanned==2 && string_in(command,"spawn","delete"))){
+        printf("Executing: %s %d\n",command,value);
+        process(command[0], value);
         }
-      else if(scanned==2){
-        if(string_in(command,"spawn","s")){
-          printf("Spawning %d\n",value);
-          spawn_merge(value);
-          }        
-        else if(string_in(command,"reduce","r")){
-          printf("Reducing %d scanned %d\n",value, scanned);
-          split_kill(value);
-          }
-        else{
-          printf("Invalid command: %s\n",command);
-          }
+      else{
+        printf("Invalid command or argument: %s\n",command);
         }
+        
       } 
     free(line);
     }

@@ -39,13 +39,15 @@ class Node_t{
     Node_t(int &argc, char** &argv, MPI_Comm _parent);
     
     MPI_Comm intra, parent;            // persistent communicators
+    MPI_Info info;                     // info object
     int wsize, wrank;                  // environment MPI vars 
     int nargc;                         // command line arguments number
     char** nargv;                      // command line arguments vars
+    bool listening;                    // process will listen by default
+    
     virtual int spawn_merge(size_t n); // spawns n new mpi processes
-    virtual int split_kill(size_t n);  // split the actual communicator and kills
-    bool listening;                    // process will listen initialised as true
-    friend class Manager;              // The manager has direct access to node.
+    virtual int split_kill(size_t n);  // split the communicator and kills
+    friend class Manager;              // Manager has direct access to node
   };
 
 class Node_master:public Node_t{
@@ -60,6 +62,9 @@ class Node_master:public Node_t{
     int spawn_merge(size_t n) override;         
     int split_kill(size_t n) override;
     
+
+    // This is the UI
+    void process(char opt, int value=0);
     void automatic();                  // automatic execution (command line)
     void interactive();                // interactive execution (readline)    
   };

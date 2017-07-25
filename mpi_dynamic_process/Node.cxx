@@ -6,11 +6,15 @@ Node_t::Node_t(int &argc, char** &argv, MPI_Comm _parent):
   MPI_Comm_dup(MPI_COMM_WORLD, &intra);              // Creates a duplicated intracomm
   MPI_Comm_size(intra, &wsize);                      // gets size in local world
   MPI_Comm_rank(intra, &wrank);                      // gets rank in local world
+
+  MPI_Info_create(&info);
+  MPI_Info_set(info, "pernode", "true");
   }
 
 Node_t::~Node_t(){
-  MPI_Comm_free(&intra);                             // Free the intra comm 
-  dprintf("Process %d: Exit (world %d)\n",wrank,wsize);
+  MPI_Info_free(&info);
+  MPI_Comm_free(&intra);                             // Free the intra comm
+  dprintf("Process %d: Exit (world %d)\n",wrank,wsize);  
   fflush(stdout);
   }
 
@@ -24,7 +28,7 @@ int Node_t::spawn_merge(size_t n){
 
   // Spawn now n processes
   dprintf("Process %d Spawning in world %d\n", wrank, wsize);
-  success = MPI_Comm_spawn(nargv[0], &nargv[1], n, MPI_INFO_NULL,
+  success = MPI_Comm_spawn(nargv[0], &nargv[1], n, info,
                            0, intra, &newinter, errcode);
   if(success==MPI_ERR_SPAWN){
     for(int i=0; i<n; ++i){

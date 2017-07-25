@@ -5,15 +5,23 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
+#include <getopt.h>
 #include <vector>
 #include <thread>
+
+#include "benchmarks.h"
+
+#include "readline/readline.h"
+#include "readline/history.h"
 
 // Messages types
 enum msg_tag{
   TAG_EXIT=0,               // Exit
-  TAG_REDUCE=1,             // Delete processes
-  TAG_SPAWN=2,              // Spawn add new mpi processes
+  TAG_REDUCE,               // Delete processes
+  TAG_SPAWN,                // Spawn add new mpi processes
   };
+
+class Manager;
 
 // Simplest message struct
 typedef struct msg_t{     
@@ -36,7 +44,8 @@ class Node_t{
     char** nargv;                      // command line arguments vars
     virtual int spawn_merge(size_t n); // spawns n new mpi processes
     virtual int split_kill(size_t n);  // split the actual communicator and kills
-    bool listening;                    // process will listen initialised as true 
+    bool listening;                    // process will listen initialised as true
+    friend class Manager;              // The manager has direct access to node.
   };
 
 class Node_master:public Node_t{
@@ -50,6 +59,9 @@ class Node_master:public Node_t{
     void stopall();                    // kill all remotes before exiting    
     int spawn_merge(size_t n) override;         
     int split_kill(size_t n) override;
+    
+    void automatic();                  // automatic execution (command line)
+    void interactive();                // interactive execution (readline)    
   };
 
 class Node_slave:public Node_t{
@@ -66,8 +78,12 @@ class Manager{
     Manager(int &argc, char** &argv);
     ~Manager();
 
+    int run();
+    
+  private:
     Node_t *Node;
     MPI_Comm parent;
+    int local_wsize, local_wrank;
   };
 
 #endif

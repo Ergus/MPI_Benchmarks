@@ -10,7 +10,7 @@ Node_t::Node_t(int &argc, char** &argv, MPI_Comm _parent):
 
 Node_t::~Node_t(){
   MPI_Comm_free(&intra);                             // Free the intra comm 
-  fprintf(stderr,"Process %d: Exit (world %d)\n",wrank,wsize);
+  dprintf("Process %d: Exit (world %d)\n",wrank,wsize);
   fflush(stdout);
   }
 
@@ -23,13 +23,13 @@ int Node_t::spawn_merge(size_t n){
   int success=0;                                     // global error report
 
   // Spawn now n processes
-  fprintf(stderr, "Process %d Spawning in world %d\n", wrank, wsize);
+  dprintf("Process %d Spawning in world %d\n", wrank, wsize);
   success = MPI_Comm_spawn(nargv[0], &nargv[1], n, MPI_INFO_NULL,
                            0, intra, &newinter, errcode);
   if(success==MPI_ERR_SPAWN){
     for(int i=0; i<n; ++i){
       if(errcode[i]!=MPI_SUCCESS){
-        fprintf(stderr,"Error: In %d spawning %d in world %d\n",wrank,i, wsize);
+        dprintf("Error: In %d spawning %d in world %d\n",wrank,i, wsize);
         continue;
         }
       }
@@ -42,7 +42,7 @@ int Node_t::spawn_merge(size_t n){
   intra = newintra;                                  // Reassign the intra to the new one
   MPI_Comm_size(newintra, &wsize);                   // update wsize
   MPI_Comm_free(&newinter);                          // Free the created intercomm
-  fprintf(stderr,"Ending spawn in %d\n", wrank);     // Delete this or add in verbose only
+  dprintf("Ending spawn in %d\n", wrank);     // Delete this or add in verbose only
   return success;
   }
 
@@ -51,7 +51,7 @@ int Node_t::split_kill(size_t n){
 
   MPI_Comm newintra = MPI_COMM_NULL;                 // Variable for intracomm
     
-  fprintf(stderr, "Process %d reducing %zu processes (world %d)\n", wrank, n, wsize);
+  dprintf("Process %d reducing %zu processes (world %d)\n", wrank, n, wsize);
   bool bigger= (wrank>=(wsize-n));
   
   MPI_Comm_split(intra, (int)bigger, wrank, &newintra);
@@ -64,9 +64,9 @@ int Node_t::split_kill(size_t n){
     }
 
   MPI_Comm_size(newintra, &wsize);                   // update wsize
-  fprintf(stderr,"Ending reduction in %d\n", wrank); // Delete this or add in verbose
+  dprintf("Ending reduction in %d\n", wrank);        // Delete this or add in verbose
 
-  fprintf(stderr, "Process %d reduced (world %d) \n",wrank,wsize);
+  dprintf("Process %d reduced (world %d) \n",wrank,wsize);
 
   return MPI_SUCCESS;  
   }

@@ -11,7 +11,7 @@
 using namespace std;
 int main(int argc, char** argv){
 
-    CommandLine::initialize(argc, argv, "mpi_matmul", "cluster");
+    CommandLine::initialize(argc, argv, "mpi_daxpy", "cluster");
     CommandLineParameter<long> dim("dim", "Array size", "number of elements");
     CommandLineParameter<long> N("N", "Threads number", "number of paralell threads");
     CommandLineParameter<double> a("a", "a value for y=a*x+y", "double scalar value");

@@ -46,4 +46,24 @@
             }                                                   \
         }
 
+#ifndef NDEBUG
+#define dprintf(...) fprintf(stderr,__VA_ARGS__)
+#else
+#define dprintf(...) {}
+#endif
+
+#ifdef __cplusplus
+
+template<typename... Args>
+inline bool string_in(std::string var, std::string first, Args... args){
+  return (var==first) || string_in(var,args...);
+  }
+
+template<>
+inline bool string_in(std::string var, std::string first){
+  return (var==first);
+  }
+
+#endif
+
 #endif

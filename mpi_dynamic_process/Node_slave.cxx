@@ -17,45 +17,46 @@ void Node_slave::listen(){
 	MPI_Status status;
   msg_t msg;
 
-  fprintf(stderr, "Process %d listening\n", wrank);
+  dprintf("Process %d listening\n", wrank);
   
   while(listening){
     // Prove the message first
     if ((ret = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, intra, &status))) {
-      fprintf(stderr, "Error probing for messages\n");
+      dprintf("Error probing for messages\n");
       MPI_Abort(intra, ret);
       }
     
     // Determine size in bytes
     if ((ret = MPI_Get_count(&status, MPI_BYTE, &count))) {
-      fprintf(stderr, "Error while determining message's size\n");
+      dprintf("Error while determining message's size\n");
       MPI_Abort(intra, ret);
       }
     assert(count!=0);
 
     // Now receive the message
     if ((ret = MPI_Recv(&msg, count, MPI_BYTE, status.MPI_SOURCE, status.MPI_TAG, intra, MPI_STATUS_IGNORE))) {
-      fprintf(stderr, "Error while receiving message\n");
+      dprintf("Error while receiving message\n");
       MPI_Abort(intra, ret);
       }
 
-    fprintf(stderr, "%d<--(%d)--%d\n", wrank, msg.type, status.MPI_SOURCE);
+    dprintf("%d<--(%d)--%d\n", wrank, msg.type, status.MPI_SOURCE);
     
     const msg_tag type=msg.type;
     
     if(type==TAG_SPAWN){
-      fprintf(stderr,"Process %d: Spawning (world %d)\n", wrank, wsize);
+      dprintf("Process %d: Spawning (world %d)\n", wrank, wsize);
       spawn_merge(msg.number);
       }
     else if(type==TAG_REDUCE){     
-      fprintf(stderr,"Process %d: Reducing (world %d)\n", wrank, wsize);
+      dprintf("Process %d: Reducing (world %d)\n", wrank, wsize);
       split_kill(msg.number);
       }
     else if(type==TAG_EXIT){
-      fprintf(stderr,"Process %d: Exit listening (world %d)\n", wrank, wsize);
+      dprintf("Process %d: Killed by %d (world %d)\n", wrank, status.MPI_SOURCE, wsize);
       listening=false;
       }
     }
+  dprintf("Process %d: Exit listening (world %d)\n", wrank, wsize);
   }
 
 void Node_slave::run(){

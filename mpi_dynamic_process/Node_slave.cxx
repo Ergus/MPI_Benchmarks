@@ -55,6 +55,10 @@ void Node_slave::listen(){
       dprintf("Process %d: Killed by %d (world %d)\n", wrank, status.MPI_SOURCE, wsize);
       listening=false;
       }
+    else if(type==TAG_INFO){
+      dprintf("Process %d: Will gather info to (world %d)\n", wrank, status.MPI_SOURCE, wsize);
+      getinfo();
+      }
     }
   dprintf("Process %d: Exit listening (world %d)\n", wrank, wsize);
   }
@@ -65,6 +69,5 @@ void Node_slave::run(){
 
   //Extra code goes here. Always before the join.
 
-  tlisten.join();
-  
+  tlisten.join();  
   }

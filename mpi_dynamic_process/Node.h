@@ -8,6 +8,7 @@
 #include <getopt.h>
 #include <vector>
 #include <thread>
+#include <unistd.h>
 
 #include "benchmarks.h"
 
@@ -19,6 +20,7 @@ enum msg_tag{
   TAG_EXIT=0,               // Exit
   TAG_REDUCE,               // Delete processes
   TAG_SPAWN,                // Spawn add new mpi processes
+  TAG_INFO,
   };
 
 class Manager;
@@ -28,6 +30,11 @@ typedef struct msg_t{
     msg_tag type;           // Message Tag value
     size_t number;          // Number of processes
   } msg_t;
+
+typedef struct info_t{
+    int rank;
+    long hostid;
+  } info_t;
 
 // Base Node class for master and slave
 class Node_t{
@@ -44,9 +51,13 @@ class Node_t{
     int nargc;                         // command line arguments number
     char** nargv;                      // command line arguments vars
     bool listening;                    // process will listen by default
+    long hostid;
+    char* hostname;
+    info_t* total_info;
     
     virtual int spawn_merge(size_t n); // spawns n new mpi processes
     virtual int split_kill(size_t n);  // split the communicator and kills
+    virtual int getinfo();             // to print information.
     friend class Manager;              // Manager has direct access to node
   };
 
@@ -55,13 +66,13 @@ class Node_master:public Node_t{
     Node_master(int &argc, char** &argv, MPI_Comm _parent);
     ~Node_master();
     
-    void run() override;
   private:
     int send_to_remotes(msg_t msg);    // like a broadcast with unblocking messages 
     void stopall();                    // kill all remotes before exiting    
     int spawn_merge(size_t n) override;         
     int split_kill(size_t n) override;
-    
+    int getinfo() override;
+    void run() override;
 
     // This is the UI
     void process(char opt, int value=0);
@@ -73,9 +84,10 @@ class Node_slave:public Node_t{
   public:
     Node_slave(int &argc, char** &argv, MPI_Comm _parent);
     ~Node_slave();
-    void run() override;
+    
   private:
     void listen();                     // listen function, running while listening==true
+    void run() override;
   };
 
 class Manager{

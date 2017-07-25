@@ -83,9 +83,23 @@ int Node_master::split_kill(size_t n){
 
 void Node_master::stopall(){
   msg_t msg_top={TAG_EXIT,0};
-
   send_to_remotes(msg_top);
+  }
 
+int Node_master::getinfo(){
+  msg_t msg={TAG_INFO,0};
+  send_to_remotes(msg);
+  
+  total_info=(info_t*)malloc(wsize*sizeof(info_t));
+  
+  Node_t::getinfo();
+
+  printf("Info: world = %d\n",wsize);
+  for(int i=0;i<wsize;++i){
+    printf("Process %d in host %ld\n",total_info[i].rank, total_info[i].hostid);
+    }
+    
+  free(total_info);
   }
 
 // User Interface
@@ -106,7 +120,12 @@ void Node_master::process(char opt, int value){
       getchar();
       break;
     case 'i':
-      printf("This will print actual status information\n");      
+      printf("This will print actual status information\n");
+      getinfo();
+      break;
+    case 'h':
+      printf("\tCommand line: %s -[hip] -[sd] [value]\n",nargv[0]);
+      printf("\tInteractive: Use tab for available commands\n",nargv[0]);
       break;
     case '?':
       dprintf("Option %c not recognised\n",opt);
@@ -118,18 +137,19 @@ void Node_master::process(char opt, int value){
 void Node_master::automatic(){
   // Now parse the cl options
   int opt, value;  
-  while ((opt = getopt(nargc, nargv, "s:d:pi")) != -1) {
-    value=atoi(optarg);
+  while ((opt = getopt(nargc, nargv, "s:d:pih")) != -1) {
+    value=(opt=='s' || opt=='d') ? atoi(optarg) : 0;
     process(opt,value);
     }
   }
 
 // Dynamic session UI
 const char *character_names[] = {
-  "spawn ",
-  "delete ",
+  "spawn",
+  "delete",
   "info",
   "exit",
+  "help",
   NULL
   };
 
@@ -168,7 +188,7 @@ void Node_master::interactive(){
       add_history(line);
       value=0;
       scanned=sscanf(line,"%s %d",command, &value);
-      if((scanned==1 && string_in(command,"exit","info")) ||
+      if((scanned==1 && string_in(command,"exit","info","help")) ||
          (scanned==2 && string_in(command,"spawn","delete"))){
         printf("Executing: %s %d\n",command,value);
         process(command[0], value);

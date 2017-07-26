@@ -6,7 +6,7 @@ ADD_EXECUTABLE(${execut} driver.cxx matmul-mpi.c)
 TARGET_LINK_LIBRARIES(${execut} common)
 
 # Run test
-ADD_TEST(NAME Test_${execut} COMMAND mpirun -np 4 ${execut} 16 8 matrix)  
+ADD_TEST(NAME Test_${execut} COMMAND mpirun -np 4 ./${execut} 16 8 matrix)  
 
 # Submitter scripts
 CONFIGURE_FILE(submit.sh submit.sh COPYONLY)

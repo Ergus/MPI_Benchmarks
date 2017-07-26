@@ -125,7 +125,7 @@ void Node_master::process(char opt, int value){
       break;
     case 'h':
       printf("\tCommand line: %s -[hip] -[sd] [value]\n",nargv[0]);
-      printf("\tInteractive: Use tab for available commands\n",nargv[0]);
+      printf("\tInteractive: Use tab for available commands\n");
       break;
     case '?':
       dprintf("Option %c not recognised\n",opt);

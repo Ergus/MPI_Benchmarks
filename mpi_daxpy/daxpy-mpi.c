@@ -46,50 +46,58 @@ void Finalize(){
 void init(double* array, size_t ldim){
 
     const size_t start = _env.first_local_thread;
-    
+    size_t i;
+    #ifdef _OPENMP
     #pragma omp parallel
+    #endif
     {
         const size_t id = omp_get_thread_num();
         srand(start+id);
-        #pragma omp for
-        for(size_t i=0; i<ldim; ++i){
+        #ifdef _OPENMP
+        #pragma omp for private(i)
+        #endif
+        for(i=0; i<ldim; ++i){
             array[i] = frand();
             }        
         }
     }
 
 void daxpy(double *lY,double a,double *X,size_t ldim){  // remember this is Y+=a*X
-    #pragma omp parallel for
-    for(size_t i=0;i<ldim;++i){
-        lY[i]+= a*X[i];
-        }
+  size_t i;
+  #ifdef _OPENMP
+  #pragma omp parallel for private(i)
+  #endif
+  for(i=0;i<ldim;++i){
+    lY[i]+= a*X[i];
     }
+  }
 
 void __print(double* mat, size_t dim, const char *name, const char* prefix){
 
-    if(_env.rank<3 && dim<=512){
-        if ( ( (_env.rank==0) && (strcmp(name,"Y")==0) ) ||
-             (  _env.IprintX  && (strcmp(name,"X")==0) )
-            ){
+  size_t i;
+  if(_env.rank<3 && dim<=512){
+    if ( ( (_env.rank==0) && (strcmp(name,"Y")==0) ) ||
+         (  _env.IprintX  && (strcmp(name,"X")==0) )
+         ){
 
-            printf("Printing %s in process %d\n",name,_env.rank);
+      printf("Printing %s in process %d\n",name,_env.rank);
             
-            char filename[128];
-            sprintf(filename,"%s_%s.mat", prefix, name);
-            FILE* fp = fopen(filename, "w+");            
-            myassert(fp);
+      char filename[128];
+      sprintf(filename,"%s_%s.mat", prefix, name);
+      FILE* fp = fopen(filename, "w+");            
+      myassert(fp);
 
-            fprintf(fp, "# name: %s\n", name);
-            fprintf(fp, "# type: matrix\n");
-            fprintf(fp, "# rows: 1\n");
-            fprintf(fp, "# columns: %lu\n", dim);
+      fprintf(fp, "# name: %s\n", name);
+      fprintf(fp, "# type: matrix\n");
+      fprintf(fp, "# rows: 1\n");
+      fprintf(fp, "# columns: %lu\n", dim);
         
-            for(int i=0; i<dim; ++i) {
-                fprintf(fp, "%3.8lf ", mat[i]);
-                }
-            printf("\n");
-            fclose(fp);
-            }
+      for(i=0; i<dim; ++i) {
+        fprintf(fp, "%3.8lf ", mat[i]);
         }
+      printf("\n");
+      fclose(fp);
+      }
     }
+  }
 

@@ -56,7 +56,7 @@ void Node_slave::listen(){
       listening=false;
       }
     else if(type==TAG_INFO){
-      dprintf("Process %d: Will gather info to (world %d)\n", wrank, status.MPI_SOURCE, wsize);
+      dprintf("Process %d: Will gather info to %d (world %d)\n", wrank, status.MPI_SOURCE, wsize);
       getinfo();
       }
     }

@@ -53,7 +53,7 @@
 #endif
 
 #ifdef __cplusplus
-
+#include <string>
 template<typename... Args>
 inline bool string_in(std::string var, std::string first, Args... args){
   return (var==first) || string_in(var,args...);

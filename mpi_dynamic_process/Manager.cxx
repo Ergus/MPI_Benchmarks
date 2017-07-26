@@ -1,12 +1,14 @@
 #include "Node.h"
 
 Manager::Manager(int &argc, char** &argv){
-  
-  int provided;
-  MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 
-  if(provided != MPI_THREAD_MULTIPLE){
+  int provided;
+  int ret = MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+
+  if(provided != MPI_THREAD_MULTIPLE || ret!=0){
     dprintf("Error in MPI initialisation\n");
+    dprintf("Thread support=%d expected=%d returned=%d\n",
+            provided,MPI_THREAD_MULTIPLE,ret);
     MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
     }
 
@@ -17,7 +19,7 @@ Manager::Manager(int &argc, char** &argv){
   if(parent==MPI_COMM_NULL && local_wrank==0)
     Node= new Node_master(argc,argv,parent);
   else
-    Node= new Node_slave(argc,argv,parent);  
+    Node= new Node_slave(argc,argv,parent);
   }
 
 int Manager::run(){

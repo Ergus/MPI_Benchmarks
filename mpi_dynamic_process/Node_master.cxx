@@ -102,7 +102,7 @@ int Node_master::getinfo(){
   free(total_info);
   }
 
-// User Interface
+// User Interface options
 void Node_master::process(char opt, int value){
   switch(opt){
     case 's':      
@@ -127,6 +127,10 @@ void Node_master::process(char opt, int value){
       printf("\tCommand line: %s -[hip] -[sd] [value]\n",nargv[0]);
       printf("\tInteractive: Use tab for available commands\n");
       break;
+    case 'e':
+      stopall();
+      listening=false;
+      break;      
     case '?':
       dprintf("Option %c not recognised\n",opt);
       MPI_Abort(intra, MPI_ERR_OTHER);
@@ -153,6 +157,7 @@ const char *character_names[] = {
   NULL
   };
 
+// simple completion for readline
 char *character_name_generator(const char *text, int state){
   static int list_index, len;
   const char *name;
@@ -176,14 +181,14 @@ char **character_name_completion(const char *text, int start, int end){
   }
 
 void Node_master::interactive(){
-
   char *line;
   char command[10];
   int value, scanned;
 
   rl_attempted_completion_function = character_name_completion; //completion
   
-  while((line = readline("> ")) != NULL) {
+  while(listening) {
+    line = readline("> ");
     if (*line){
       add_history(line);
       value=0;
@@ -195,10 +200,8 @@ void Node_master::interactive(){
         }
       else{
         printf("Invalid command or argument: %s\n",command);
-        }
-        
+        }        
       } 
     free(line);
-    }
-  
+    }  
   }

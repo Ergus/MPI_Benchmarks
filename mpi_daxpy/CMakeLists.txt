@@ -4,10 +4,10 @@ STRING(REPLACE "${OMPFLAG}" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
 # Selective compilation with openMP
 ADD_LIBRARY(daxpy-mpi-omp OBJECT daxpy-mpi.c)
-TARGET_COMPILE_OPTIONS(daxpy-mpi-omp PUBLIC "-qopenmp")
+TARGET_COMPILE_OPTIONS(daxpy-mpi-omp PUBLIC "${OMPFLAG}")
 ADD_EXECUTABLE(daxpy-gather-omp driver.cxx $<TARGET_OBJECTS:daxpy-mpi-omp> )
 TARGET_LINK_LIBRARIES(daxpy-gather-omp common )
-SET_TARGET_PROPERTIES(daxpy-gather-omp PROPERTIES LINK_FLAGS "-qopenmp")
+SET_TARGET_PROPERTIES(daxpy-gather-omp PROPERTIES LINK_FLAGS "${OMPFLAG}")
 
 # COmpile secuential version
 ADD_EXECUTABLE(daxpy-gather-sec driver.cxx daxpy-mpi.c)

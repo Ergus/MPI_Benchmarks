@@ -9,11 +9,25 @@
 #include <vector>
 #include <thread>
 #include <unistd.h>
+#include <string>
 
 #include "benchmarks.h"
 
 #include "readline/readline.h"
 #include "readline/history.h"
+
+// Macro
+#define measure(fun, value) {     \
+  int sz1=wsize;               \
+  Timer t(#fun, #fun);         \
+  t.start();                   \
+  fun(value);                  \
+  t.stop();                    \
+  int sz2=wsize;               \
+  printf("World: %d -> %d [ %s %d ] time: %ld ns\n",  \
+         sz1,sz2,#fun,value,(long)t);                 \
+}
+
 
 // Messages types
 enum msg_tag{

@@ -60,6 +60,8 @@ int Node_t::split_kill(size_t n){
     
   dprintf("Process %d reducing %zu processes (world %d)\n", wrank, n, wsize);
   listening = (wrank<(wsize-n));
+
+  dprintf("Process %d split listening %d (world %d)\n", wrank, listening, wsize);
   
   MPI_Comm_split(intra, (int)listening, wrank, &newintra);
 

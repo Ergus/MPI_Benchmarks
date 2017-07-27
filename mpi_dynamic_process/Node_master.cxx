@@ -23,7 +23,7 @@ Node_master::~Node_master(){
 
 int Node_master::send_to_remotes(msg_t msg){
   // Only send to remotes if there are any
-  if(wsize>1){    
+  if(wsize>1){
     const int remotes=wsize-1;
     // Send unblocking spawn messages to all remotes.
     MPI_Request *requests=(MPI_Request*)malloc(remotes*sizeof(MPI_Request));
@@ -72,12 +72,14 @@ int Node_master::spawn_merge(size_t n){
 int Node_master::split_kill(size_t n){
   // first send message if there are remotes
   dprintf("Reducing %lu processes (world %d)\n", n, wsize);
-  if(wsize>1 && n<wsize-1){
+  if(wsize>1 && n<wsize){
     dprintf("Sending reduce to remotes\n");
     msg_t msg_red={TAG_REDUCE,n};
     send_to_remotes(msg_red);
     }
-
+  else{
+    dprintf("I can't reduce %d processes in world %d\n",n,wsize);
+    }
   return Node_t::split_kill(n);
   }
 
@@ -102,17 +104,18 @@ int Node_master::getinfo(){
   free(total_info);
   }
 
+int pr(int){};
+
 // User Interface options
 void Node_master::process(char opt, int value){
   switch(opt){
     case 's':      
-      printf("Processing %c %d\n",opt, value);
-      spawn_merge(value);
+      printf("Processing %c %d\n",opt, value);      
+      measure(spawn_merge, value);      
       break;
     case 'd':
-      value=atoi(optarg);
       printf("Processing %c %d\n",opt, value);
-      split_kill(value);
+      measure(split_kill,value);
       break;
     case 'p':
       fflush(stderr);

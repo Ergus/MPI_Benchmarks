@@ -8,3 +8,6 @@ TARGET_LINK_LIBRARIES(${execut} readline common)
 
 # Run test
 ADD_TEST(NAME Test_${execut} COMMAND ${execut} 5 2)  
+
+# Submitter scripts and filters
+CONFIGURE_FILE(test1.sh test1.sh COPYONLY)

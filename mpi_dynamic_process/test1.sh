@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=mpi_dynamic
+#SBATCH --job-name=mpi_dynamic_spawn
 #SBATCH --qos=debug
 #SBATCH --time=00-00:05:00
 #SBATCH --error=%x_%A.err 
 #SBATCH --output=%x_%A.out
-#SBATCH --nodes=4
+#SBATCH --nodes=16
 #SBATCH --tasks-per-node=1
 
-mpirun -np 1 ./dynamicOOP -s 1 -s 1 -s 1 -i -s 1 -s 1 -s 1 -i
-mpirun -np 1 ./dynamicOOP -s 1 -s 1 -s 1 -i -s 1 -s 1 -s 1 -i
-mpirun -np 1 ./dynamicOOP -s 1 -s 1 -s 1 -i -s 1 -s 1 -s 1 -i
-mpirun -np 1 ./dynamicOOP -s 1 -s 1 -s 1 -i -s 1 -s 1 -s 1 -i
+for i in 1 2 4 8 16; do
+    times=$((SLURM_JOB_NUM_NODES/i))     # Estimates nproc/step
+    char='%.0s -s '$i                    # generates a substring '%0s -s step'
+    input=$(printf "${char}" $(eval echo {1..$times}))
+    echo "Running times="$times
+    echo $input
+    mpirun -np 1 ./dynamicOOP ${input} -i | tee ${SLURM_JOB_NAME}_${SLURM_JOB_ID}_${SLURM_JOB_NUM_NODES}_$i.out
+done

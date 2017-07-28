@@ -16,6 +16,9 @@
 #include "readline/readline.h"
 #include "readline/history.h"
 
+#include "Timer.hpp"
+#include "Multitimer.hpp"
+
 // Macro
 #define measure(fun, value) {     \
   int sz1=wsize;               \
@@ -65,9 +68,9 @@ class Node_t{
     int nargc;                         // command line arguments number
     char** nargv;                      // command line arguments vars
     bool listening;                    // process will listen by default
-    long hostid;
-    char* hostname;
-    info_t* total_info;
+    long hostid;                       // id of running host
+    info_t* total_info;                // Only used to gather information with master
+    Multitimer timer;                  // timer to measure code portions
     
     virtual int spawn_merge(size_t n); // spawns n new mpi processes
     virtual int split_kill(size_t n);  // split the communicator and kills

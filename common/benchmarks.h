@@ -55,7 +55,7 @@
 #ifdef __cplusplus
 
 #include <string>
-#include <Timer.hpp>
+#include <sstream>
 
 template<typename... Args>
 inline bool string_in(std::string var, std::string first, Args... args){
@@ -65,6 +65,15 @@ inline bool string_in(std::string var, std::string first, Args... args){
 template<>
 inline bool string_in(std::string var, std::string first){
   return (var==first);
+  }
+
+template<class T> 
+std::string toString(const T& t, bool *ok = NULL) { 
+  std::ostringstream stream;     
+  stream << t;             
+  if(ok != NULL) 
+    *ok = (stream.fail() == false);
+  return stream.str();
   }
 
 #endif

@@ -10,7 +10,6 @@ Node_t::Node_t(int &argc, char** &argv, MPI_Comm _parent):
 
   MPI_Info_create(&info);
   MPI_Info_set(info, "pernode", "true");
-
   }
 
 Node_t::~Node_t(){

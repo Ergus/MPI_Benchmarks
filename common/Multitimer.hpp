@@ -23,19 +23,19 @@ class Multitimer {
     vector<pair<string,timespec>> _register;
     
     
-	inline void getTime(struct timespec &ts){
-		int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
-		if (rc != 0) {
-			int error = errno;
-			std::cerr << "Error reading time: " << strerror(error) << std::endl;
-			exit(1);
+    inline void getTime(struct timespec &ts){
+      int rc = clock_gettime(CLOCK_MONOTONIC, &ts);
+      if (rc != 0) {
+        int error = errno;
+        std::cerr << "Error reading time: " << strerror(error) << std::endl;
+        exit(1);
+        }
       }
-    }
 	
-	inline double getNS(struct timespec const &ts) const{
-		return ts.tv_sec * 1000000000.0 + ts.tv_nsec;
-    }    
-    
+    inline double getNS(struct timespec const &ts) const{
+      return ts.tv_sec * 1000000000.0 + ts.tv_nsec;
+      }
+
   public:
     Multitimer(string name="unnamed"):
       _name(name),_running(false){
@@ -100,7 +100,5 @@ class Multitimer {
       return os;
       }    
   };
-
-
 
 #endif // MULTITIMER_HPP

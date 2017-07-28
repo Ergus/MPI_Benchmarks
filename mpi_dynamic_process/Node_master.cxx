@@ -47,7 +47,7 @@ int Node_master::send_to_remotes(msg_t msg){
                   wsize);
           }
         }
-      return 1;
+      return MPI_ERR_IN_STATUS;
       }
     // Release the arrays
     free(requests);
@@ -95,22 +95,24 @@ void Node_master::stopall(){
   }
 
 int Node_master::getinfo(){
+  timer.start("Collective");
   msg_t msg={TAG_INFO,0};
   send_to_remotes(msg);
+  timer.fetch("SendAll");
   
   total_info=(info_t*)malloc(wsize*sizeof(info_t));
+  timer.fetch("malloc");
   
   Node_t::getinfo();
-
+  timer.fetch("MPIGather");
+  
   printf("Info: world = %d\n",wsize);
   for(int i=0;i<wsize;++i){
     printf("Process %d in host %ld\n",total_info[i].rank, total_info[i].hostid);
     }
-    
+  timer.stop();
   free(total_info);
   }
-
-int pr(int){};
 
 // User Interface options
 void Node_master::process(char opt, int value){
@@ -118,12 +120,10 @@ void Node_master::process(char opt, int value){
     case 's':      
       printf("Processing %c %d\n",opt, value);      
       measure(spawn_merge, value);
-      std::cout<<timer<<std::endl;
       break;
     case 'd':
       printf("Processing %c %d\n",opt, value);
       measure(split_kill,value);
-      std::cout<<timer<<std::endl;
       break;
     case 'p':
       fflush(stderr);
@@ -133,6 +133,7 @@ void Node_master::process(char opt, int value){
     case 'i':
       printf("This will print actual status information\n");
       getinfo();
+      std::cout<<timer<<std::endl;
       break;
     case 'h':
       printf("\tCommand line: %s -[hip] -[sd] [value]\n",nargv[0]);

@@ -20,15 +20,12 @@
 #include "Multitimer.hpp"
 
 // Macro
-#define measure(fun, value) {     \
+#define measure(fun, value) {  \
   int sz1=wsize;               \
-  Timer t(#fun, #fun);         \
-  t.start();                   \
   fun(value);                  \
-  t.stop();                    \
   int sz2=wsize;               \
-  printf("World: %d -> %d [ %s %d ] time: %ld ns\n",  \
-         sz1,sz2,#fun,value,(long)t);                 \
+  printf("World: %d -> %d [ %s %d ] %s\n",    \
+         sz1,sz2,#fun,value, toString(timer).c_str());  \
 }
 
 

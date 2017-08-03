@@ -12,3 +12,4 @@ ADD_TEST(NAME Test_${execut} COMMAND ${execut} 5 2)
 # Submitter scripts and filters
 CONFIGURE_FILE(test1.sh test1.sh COPYONLY)
 CONFIGURE_FILE(test2.sh test2.sh COPYONLY)
+CONFIGURE_FILE(test3.sh test3.sh COPYONLY)

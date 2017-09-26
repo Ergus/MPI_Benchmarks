@@ -61,6 +61,7 @@ Reportable::Reportable(std::string const &area, std::string const &name, std::st
 std::ostream& Reportable::emitArea(std::ostream& o)
 {
 	o << _area << "\t";
+  return o;
 }
 
 

@@ -7,7 +7,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
+
     typedef struct{
         int rank, worldsize;
         size_t dim, tthreads;
@@ -17,17 +17,19 @@ extern "C" {
 
     extern envinfo _env;
 
-    void Initialize(int *argc,char ***argv,size_t dim,size_t N);
+    void Initialize(int *argc,char ***argv, size_t dim, size_t TS);
 
-    void init(double* array, size_t ldim);
+	void init(double *array, size_t ldim);
 
-    void daxpy(double *lY,double a,double *X,size_t ldim);  // remember this is X+=a*Y
+	void daxpy(double * __restrict__ lY, const double a,
+	           const double * __restrict__ X,
+	           const size_t ldim);                    // remember this is X+=a*Y
 
-    void __print(double* mat, size_t dim, const char *name, const char* prefix);
+    void __print(double *mat, size_t dim, const char *name, const char *prefix);
 
     void Finalize();
 
-    #define printmatrix(mat, dim, pref) __print(mat, dim, #mat, pref); 
+    #define printmatrix(mat, dim, pref) __print(mat, dim, #mat, pref);
 
 #ifdef __cplusplus
 }

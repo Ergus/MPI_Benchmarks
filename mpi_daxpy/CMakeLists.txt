@@ -29,7 +29,9 @@ ELSE()
 ENDIF(PYTHONINTERP_FOUND)
 
 # Submitter scripts and filters
-CONFIGURE_FILE(submit.sh submit.sh COPYONLY)
-CONFIGURE_FILE(profile-daxpy.sh profile-daxpy.sh COPYONLY)
-CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/mpi_matmul/gnuplot.plt gnuplot.plt COPYONLY)
+#CONFIGURE_FILE(submit.sh submit.sh COPYONLY)
+#CONFIGURE_FILE(profile-daxpy.sh profile-daxpy.sh COPYONLY)
+#CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/mpi_matmul/gnuplot.plt gnuplot.plt COPYONLY)
 
+CONFIGURE_FILE(run_daxpy.sh run_daxpy.sh)
+CONFIGURE_FILE(profile_daxpy.sh profile_daxpy.sh @ONLY)

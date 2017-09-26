@@ -14,10 +14,10 @@ int main(int argc, char** argv)
 {
 	CommandLine::initialize(argc, argv, "mpi_matmul", "cluster");
 	CommandLineParameter<size_t> dim("dim", "Array size");
-	CommandLineParameter<size_t> TS("TS", "Threads number");
+	CommandLineParameter<size_t> TS("TS", "Task size");
 	CommandLineParameter<size_t> its("its", "Number of iterations");
-	OptionalCommandLineParameter<bool> print("print", 0, "Print Matrix");
-	OptionalCommandLineParameter<string> pref("prefix", "matvec", "Prefix");
+	OptionalCommandLineParameter<bool> print("print", 0, "Print Matrices");
+	OptionalCommandLineParameter<string> pref("prefix", "MTV", "Prefix");
 	CommandLine::validate();
 
 	Initialize(&argc, &argv, dim, TS);
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 	printf("Call Allgather in process %d\n", _env.rank);
 
 	if (_env.rank == 0)
-		timer.start();
+		timer.start(); // =============================
 	// Gather B to all
 	MPI_Allgather(MPI_IN_PLACE, _env.ldim, MPI_DOUBLE,
 				  B, _env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
 		matvec(lA, B, lC, _env.ldim, dim);
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	timer.stop();
+	timer.stop();      // =============================
 
 	// Gather C to root
 	dprintf("Call C Gather in process %d\n", _env.rank);
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 	if (_env.rank==0)
 		Report::emit();
 
-	if (print){
+	if (print) {
 	  printf("Printing Matrices in process %d\n", _env.rank);
 	  const string prefix = pref;
 	  printmatrix(A, _env.dim, _env.dim, prefix.c_str());

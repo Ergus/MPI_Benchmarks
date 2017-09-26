@@ -23,9 +23,10 @@ void Initialize(int *argc, char ***argv, size_t dim, size_t TS)
 	omp_set_num_threads(ltasks);
 
 	_env.dim = dim;
-	_env.tthreads = N;               // Total tasks
 	_env.ldim = TS;                  // rows for local process
+	_env.tthreads = N;               // Total tasks
 	_env.lthreads = ltasks;		     // threads per process
+
 	_env.first_local_thread = _env.rank * ltasks; // first local thread id
 	_env.IprintA = (_env.rank == 0);						// prints A
 	_env.IprintB = (imin(1,_env.worldsize-1) == _env.rank); // prints B
@@ -37,7 +38,7 @@ void Finalize()
 	MPI_Finalize();
 }
 
-void init(double* array, size_t rows, size_t cols)
+void init(double *array, size_t rows, size_t cols)
 {
 	size_t i;
 	const size_t fullsize = rows*cols;
@@ -61,17 +62,17 @@ void matvec(double * __restrict__ A,
 {
 	size_t i,j;
 #pragma omp parallel for private (i,j)
-	for(i=0;i<rowsA;++i){
+	for (i = 0; i < rowsA; ++i) {
 		double sum=0.0;
-		for(j=0;j<colsA;++j){
+		for (j = 0; j < colsA; ++j) {
 			sum+=A[i*colsA+j]*B[j];
 		}
 		C[i]=sum;
 	}
 }
 
-void __print(double* mat, size_t rows, size_t cols,
-			 const char *name, const char* prefix)
+void __print(double *mat, size_t rows, size_t cols,
+			 const char *name, const char *prefix)
 {
 	int i,j;
 	if (_env.rank<3) {
@@ -84,7 +85,7 @@ void __print(double* mat, size_t rows, size_t cols,
 
 			char filename[128];
 			sprintf(filename,"%s_%s.mat", prefix, name);
-			FILE* fp = fopen(filename, "w+");
+			FILE *fp = fopen(filename, "w+");
 			myassert(fp);
 
 			fprintf(fp, "# name: %s\n", name);

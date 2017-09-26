@@ -76,7 +76,7 @@ awk -v odir=${res_dir}            \
 	${res_dir}/*.out
 
 # Sort the files (optional)
-for file in *.csv; do
+for file in ${res_dir}/*.csv; do
 	sort -n $file -o $file &
 done
 wait

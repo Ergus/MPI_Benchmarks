@@ -67,16 +67,15 @@ while [[ "$((bjobs) 2>&1)" != "No unfinished job found" ]]; do
 done
 
 echo "Parsing results..."
-
 awk -v odir=${res_dir}            \
 	'/algorithm_time/ {           \
 		split(FILENAME,a,"[_.]"); \
-		print a[4], a[2]/(a[4]*a[6]), $5 >> odir"/stats_daxpy_"(a[2])"_"(a[6])".csv" \
+		print a[4], a[2]/(a[4]*a[6]), $5 >> odir"/stats_matvec_"(a[2])"_"(a[6])".csv" \
 		}'                        \
 	${res_dir}/*.out
 
 # Sort the files content (optional)
-for file in *.csv; do
+for file in ${res_dir}/*.csv; do
 	sort -n $file -o $file &
 done
 wait

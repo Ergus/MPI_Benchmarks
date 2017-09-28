@@ -14,8 +14,8 @@ ADD_EXECUTABLE(daxpy-gather-sec driver.cxx daxpy-mpi.c)
 TARGET_LINK_LIBRARIES(daxpy-gather-sec common)
 
 # ADD tests
-ADD_TEST(NAME Test_Daxpy_Gather-opm COMMAND mpirun -np 4 ./daxpy-gather-omp 16 8 3 omp)
-ADD_TEST(NAME Test_Daxpy_Gather-sec COMMAND mpirun -np 4 ./daxpy-gather-sec 16 8 3 sec)
+ADD_TEST(NAME Test_Daxpy_Gather-opm COMMAND mpirun -np 4 ./daxpy-gather-omp 64 8 3 1 omp)
+ADD_TEST(NAME Test_Daxpy_Gather-sec COMMAND mpirun -np 4 ./daxpy-gather-sec 64 8 3 1 sec)
 
 # python test
 IF(PYTHONINTERP_FOUND)

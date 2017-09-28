@@ -5,7 +5,7 @@ ADD_EXECUTABLE(${execut} driver.cxx matvec-mpi.c)
 TARGET_LINK_LIBRARIES(${execut} common)
 
 # Run test
-ADD_TEST(NAME Test_${execut} COMMAND mpirun -np 4 ./${execut} 16 8 matrix)  
+ADD_TEST(NAME Test_${execut} COMMAND mpirun -np 4 ./${execut} 64 8 1 1 matrix)  
 
 # python test
 IF(PYTHONINTERP_FOUND)

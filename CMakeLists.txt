@@ -14,7 +14,7 @@ IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   SET(FLAGS "-link_mpi=opt_mt -O2")
 ELSEIF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   SET(OMPFLAG "-fopenmp")
-  SET(FLAGS "-O2")  
+  SET(FLAGS "-O2 -lrt")
 ENDIF()
 
 SET(CMAKE_C_COMPILER mpicc)
@@ -36,3 +36,4 @@ ENDFOREACH()
 
 SET(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build/install)
 
+CONFIGURE_FILE(extrae_template.xml extrae_template.xml COPYONLY)

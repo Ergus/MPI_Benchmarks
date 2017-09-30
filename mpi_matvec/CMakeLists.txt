@@ -21,5 +21,5 @@ ENDIF(PYTHONINTERP_FOUND)
 #CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/mpi_matmul/profile-matmul.sh profile-matmul.sh COPYONLY)
 #CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/mpi_matmul/gnuplot.plt gnuplot.plt COPYONLY)
 
-CONFIGURE_FILE(run_matvec.sh run_matvec.sh)
+CONFIGURE_FILE(run_matvec.sh run_matvec.sh @ONLY)
 CONFIGURE_FILE(profile_matvec.sh profile_matvec.sh @ONLY)

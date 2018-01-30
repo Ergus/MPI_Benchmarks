@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=mpi_dynamic_spawn
+#SBATCH --job-name=dynamic_spawn
 #SBATCH --qos=bsc_cs
 #SBATCH --time=02-00:00:00
 #SBATCH --nodes=50

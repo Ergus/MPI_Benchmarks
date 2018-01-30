@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=mpi_dynamic_delete
+#SBATCH --job-name=dynamic_delete
 #SBATCH --qos=debug
 #SBATCH --time=00-00:10:00
 #SBATCH --nodes=16

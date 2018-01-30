@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=mpi_dynamic_spawn
+#SBATCH --job-name=dynamic_spawn
 #SBATCH --qos=debug
 #SBATCH --time=00-00:10:00
 #SBATCH --error=%x_%A.err 

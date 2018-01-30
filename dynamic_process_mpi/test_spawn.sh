@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=dynamic_spawn
+#SBATCH --job-name=spawn
 #SBATCH --qos=bsc_cs
-#SBATCH --time=02-00:00:00
-#SBATCH --nodes=50
+#SBATCH --time=8:00:00
+#SBATCH --nodes=40
 #SBATCH --error=%x_%A.err 
 #SBATCH --output=%x_%A.out
 #SBATCH --tasks-per-node=1
@@ -22,14 +22,13 @@ if (($# < 1)); then
     exit
 fi
 
-END=$1
-
-for i in {1..9} {11..39..2} ; do
-    for j in {1..8} {10..40..2} {24..40..4}; do
+readonly END=$1
+for i in {1..8} {9..39..2}; do
+    for j in {1..9} {10..40..2}; do
 	for ((a=1; a<=END; ++a)); do
-	    mpirun -np 1 ./dynamicOOP -s $i -s $j -i
+	    mpirun -np 1 ./dynamicOOP -s $i -s $j
 	done
-    done    
+    done
 done
 
 #------------- Foot ----------------

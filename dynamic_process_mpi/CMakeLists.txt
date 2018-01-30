@@ -10,6 +10,7 @@ TARGET_LINK_LIBRARIES(${execut} readline common)
 ADD_TEST(NAME Test_${execut} COMMAND ${execut} 5 2)  
 
 # Submitter scripts and filters
-CONFIGURE_FILE(test1.sh test1.sh COPYONLY)
-CONFIGURE_FILE(test2.sh test2.sh COPYONLY)
-CONFIGURE_FILE(test3.sh test3.sh COPYONLY)
+CONFIGURE_FILE(test_spawn.sh test_spawn.sh COPYONLY)
+CONFIGURE_FILE(test_shrink.sh test_shrink.sh COPYONLY)
+
+CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)

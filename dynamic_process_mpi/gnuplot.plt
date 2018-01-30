@@ -1,45 +1,87 @@
-filter="awk 'FNR==1{dim=$5; th=$7; n=$9} \
-            /algorithm_time/{time=$5/10^6} \
-            /Arrays match/{print dim, th, n, time; nextfile}' %s/*.out \
-            | sort -n -k3 > %s_general.csv "
+#!/usr/bin/gnuplot -c
 
-averag="awk 'function avg(ar,n,mean,  r){ \
-               for(i=0;i<n;++i){ \
-                 r+=(ar[i]-mean)^2 } \
-               return sqrt(r/(n*(n-1))) } \
-            BEGIN{print \"Nodes\", \"Time\", \"Error\"} \
-            {if($3!=N){ \
-               if(cont>0) \
-                 {print N, mean/=cont, avg(vals,cont,mean)}; \
-               N=$3; cont=0; mean=0}} \
-            {vals[cont++]=$4; mean+=$4} \
-            END{print N, mean/=cont, avg(vals,cont,mean)}' %s_general.csv \
-            | tee %s_reduced.csv "
+if (ARGC < 2) {
+	print sprintf("Usage: %s spawn_output shrink_output", ARG0)
+	exit
+}
 
-speedup="awk 'NR==1{next}$1==1{var=$2;err=$3} \
-              {print $1, var/$2, $2*err+var*$3}' %s_reduced.csv "
+# Basic awk filtering
+spawn1="<awk '/^World/ && $2<$4 && $2==%s { print $7, $15 }' %s"
+spawn2="<awk '/^World/ && $2<$4 && $7==%s { print $2, $15 }' %s"
 
-splitted(in)=word(system(sprintf("echo %s | sed -e \"s|_| |g\"",in)),2)
+shrink1="<awk '/^World/ && $2>$4 && $7==%s { print $2, $15 }' %s"
+shrink2="<awk '/^World/ && $2>$4 && $2==%s { print $7, $15 }' %s"
 
-system(sprintf(filter,dir,dir))
+# This is the average receives 2 columns 
+mean=" | awk '{sum[$1]+=$2; var[$1][cont[$1]+=1]=$2} \
+			END{ \
+				for (s in var) { \
+                	n = cont[s]; \
+					m = sum[s]/n; \
+					std = 0.0; \
+					for (i in var[s]) { \
+						std += (var[s][i]-m)^2; \
+						}; \
+                    e = sqrt(std / (n*(n-1)) ); \
+                    print s, m, e; \
+				} \
+			}' "
 
-set term postscript eps noenhanced color linewidth 0.5 dashlength 4
-set output dir.".eps
-
-# line styles
+########## Global sets ########################
 set style line  1 lt 1 pt 7 lw 4 ps 0.75
-set style line  2 lt 1 pt 6 lw 0.75 ps 1
+set term postscript eps noenhanced color linewidth 0.5 dashlength 4
+set grid
+
+set key left
+
+set ylabel "Time(ns)"
 
 colors ="#0072bd #d95319 #edb120 #7e2f8e #77ac30 #4dbeee #a2142f"
 
-set multiplot layout 1, 2 title dir
-#set grid
-set xlabel "Nodes"
-set ylabel "Time(ms)"
-plot sprintf("<".averag,dir,dir) u 1:2:3 w errorbars ls 1 notitle, \
-     '' u 1:2 w lines ls 1 title splitted(dir)
+########## Graph 1 (spawn size) ################
 
-set ylabel "Speedup"
-plot sprintf("<".speedup,dir) u 1:2 w lp ls 1 title splitted(dir)
+set output "| epstopdf --filter --outfile=spawn_size.pdf"
 
-print "Processed folder: ".dir
+set xlabel "Spawn size"
+
+vals="1 2 4 8 17 31 39"
+
+plot for [i=1:words(vals)] sprintf(spawn1.mean, word(vals,i), ARG1) u 1:2:3 w errorbars ls 1 lc rgb word(colors,i) notitle, \
+     for [i=1:words(vals)] sprintf(spawn1.mean, word(vals,i), ARG1) u 1:2 w lines ls 1 lc rgb word(colors,i) title "Initial Nodes: ".word(vals,i)
+
+########## Graph 2 (spawn initial) ###############
+
+set output "| epstopdf --filter --outfile=spawn_initial.pdf"
+
+set xlabel "Initial Nodes"
+
+vals="1 2 4 8 16 32 40"
+
+plot for [i=1:words(vals)] sprintf(spawn2.mean, word(vals,i), ARG1) u 1:2:3 w errorbars ls 1 lc rgb word(colors,i) notitle, \
+     for [i=1:words(vals)] sprintf(spawn2.mean, word(vals,i), ARG1) u 1:2 w lines ls 1 lc rgb word(colors,i) title "Spawn Size: ".word(vals,i)
+
+########## Graph 3 (shrink size) #################
+
+set output "| epstopdf --filter --outfile=shrink_size.pdf"
+set key right bottom
+
+set xlabel "Shrink size"
+
+vals="2 3 5 9 17 33"
+
+plot for [i=1:words(vals)] sprintf(shrink2.mean, word(vals,i), ARG2) u 1:2:3 w errorbars ls 1 lc rgb word(colors,i) notitle, \
+     for [i=1:words(vals)] sprintf(shrink2.mean, word(vals,i), ARG2) u 1:2 w lines ls 1 lc rgb word(colors,i) title "Initial Nodes: ".word(vals,i)
+
+
+########## Graph 4 (shrink initial) ##############
+
+set output "| epstopdf --filter --outfile=shrink_initial.pdf"
+
+set xlabel "Initial Nodes"
+
+vals="1 2 4 8 16 32"
+
+plot for [i=1:words(vals)] sprintf(shrink1.mean, word(vals,i), ARG2) u 1:2:3 w errorbars ls 1 lc rgb word(colors,i) notitle, \
+     for [i=1:words(vals)] sprintf(shrink1.mean, word(vals,i), ARG2) u 1:2 w lines ls 1 lc rgb word(colors,i) title "Shrink Size: ".word(vals,i)
+
+### Exit ###

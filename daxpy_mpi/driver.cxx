@@ -11,7 +11,7 @@
 using namespace std;
 int main(int argc, char** argv)
 {
-	CommandLine::initialize(argc, argv, "mpi_daxpy", "cluster");
+	CommandLine::initialize(argc, argv, "daxpy_mpi", "cluster");
 	CommandLineParameter<long> dim("dim", "Array size");
 	CommandLineParameter<long> TS("TS", "Task size");
 	CommandLineParameter<double> a("a", "a value for y=a*x+y");

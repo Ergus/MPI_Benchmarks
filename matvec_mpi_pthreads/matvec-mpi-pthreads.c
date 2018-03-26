@@ -1,12 +1,17 @@
 #include "matvec-mpi-pthreads.h"
 #include <pthread.h>
 #include <assert.h>
+
 envinfo _env;
 
 void Initialize(int *argc, char ***argv,
                 const size_t dim, const size_t lthreads)
 {
-	MPI_Init(argc, argv);
+
+	int provided;
+	MPI_Init_thread(argc, argv, 1, &provided);
+	assert(provided>=1);
+
 	MPI_Comm_rank(MPI_COMM_WORLD, &(_env.rank));
 	MPI_Comm_size(MPI_COMM_WORLD, &(_env.worldsize));
 
@@ -98,7 +103,8 @@ void matvec(const double * const __restrict__ A,
 
 	assert(rowsA%lthreads == 0);
 
-	input2 *inputs = malloc(lthreads * sizeof(input1));
+	input2 *inputs = malloc(lthreads * sizeof(input2));
+
 	pthread_t *threads = malloc(lthreads * sizeof(pthread_t));
 
 	for(i = 0; i < lthreads; ++i) {

@@ -22,7 +22,8 @@ int main(int argc, char** argv)
 	CommandLine::validate();
 
 	Initialize(&argc, &argv, dim, nth);
-	cout << "Initialized in process %d\n" << _env.rank;
+
+	cout << "Initialized in process " << _env.rank << endl;
 
 	const size_t ldimA=_env.ldim*dim;        //_env.ldim is the fraction dim/N
 	const size_t dimA = (_env.IprintA ? dim : _env.ldim);

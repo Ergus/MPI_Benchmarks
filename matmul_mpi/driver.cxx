@@ -18,7 +18,6 @@ int main(int argc, char** argv)
 	CommandLine::validate();
 
 	const string prefix=clprefix;
-
 	printf("Initialization in process %d\n", _env.rank);
 	Initialize(&argc, &argv, dim, N);
 

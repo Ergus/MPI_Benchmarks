@@ -21,11 +21,11 @@
 void check_factorization(const size_t n, double A1[n][n], double A2[n][n],
 	                         const size_t lda, const double eps);
 
-void task_fill_block_ij(const size_t nblocks, const size_t bsize,
+void fill_block_ij(const size_t nblocks, const size_t bsize,
                         double matrix[nblocks][nblocks][bsize][bsize],
                         const size_t i, const size_t j);
 
-void task_fill_block_ii(const size_t nblocks, const size_t bsize,
+void fill_block_ii(const size_t nblocks, const size_t bsize,
                         double matrix[nblocks][nblocks][bsize][bsize],
                         const size_t i);
 
@@ -58,8 +58,6 @@ enum blas_cmach_type {
 	blas_sfmin     = 161
 };
 
-double BLAS_dfpinfo(enum blas_cmach_type cmach);
-
 static inline double BLAS_dpow_di(double x, int n)
 {
 	double rv = 1.0;
@@ -74,6 +72,27 @@ static inline double BLAS_dpow_di(double x, int n)
 	}
 
 	return rv;
+}
+
+static inline double BLAS_dfpinfo(enum blas_cmach_type cmach)
+{
+	const double b = 2.0;
+	const int    t = 53, m = -1021; // l = 1024, 
+	const double eps = BLAS_dpow_di(b, -t);
+	const double r   = BLAS_dpow_di(b, m-1);
+
+	//double o = ((1.0 - eps) * BLAS_dpow_di(b, l-1)) * b;
+
+	switch (cmach) {
+	case blas_eps:   return eps;
+	case blas_sfmin: return r;
+	default:
+		fprintf(stderr, "%s %d %d %d\n", __func__, -1, cmach, 0);
+		abort();
+		break;
+	}
+
+	return 0.0;
 }
 
 void oss_potrf(const size_t bsize, double A[bsize][bsize]);

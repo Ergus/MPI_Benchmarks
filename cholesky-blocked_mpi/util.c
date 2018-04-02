@@ -1,27 +1,5 @@
 #include "util.h"
 
-
-static inline double BLAS_dfpinfo(enum blas_cmach_type cmach)
-{
-	const double b = 2.0;
-	const int    t = 53, m = -1021; // l = 1024, 
-	const double eps = BLAS_dpow_di(b, -t);
-	const double r   = BLAS_dpow_di(b, m-1);
-
-	//double o = ((1.0 - eps) * BLAS_dpow_di(b, l-1)) * b;
-
-	switch (cmach) {
-	case blas_eps:   return eps;
-	case blas_sfmin: return r;
-	default:
-		fprintf(stderr, "%s %d %d %d\n", __func__, -1, cmach, 0);
-		abort();
-		break;
-	}
-
-	return 0.0;
-}
-
 void check_factorization(const size_t n,
                          double A1[n][n], double A2[n][n],
                          const size_t lda, const double eps)
@@ -133,9 +111,9 @@ void oss_gemm(const size_t bsize,
 }
 
 
-void task_fill_block_ij(const size_t nblocks, const size_t bsize,
-                        double matrix[nblocks][nblocks][bsize][bsize],
-                        const size_t i, const size_t j)
+void fill_block_ij(const size_t nblocks, const size_t bsize,
+                   double matrix[nblocks][nblocks][bsize][bsize],
+                   const size_t i, const size_t j)
 {
 	const size_t seed = i * nblocks + j;
 	size_t k, l;
@@ -155,10 +133,10 @@ void task_fill_block_ij(const size_t nblocks, const size_t bsize,
 	}
 }
 
-//! This is to initialize diagonal blocks (assuming 1 block/task)
-void task_fill_block_ii(const size_t nblocks, const size_t bsize,
-                        double matrix[nblocks][nblocks][bsize][bsize],
-                        const size_t i)
+
+void fill_block_ii(const size_t nblocks, const size_t bsize,
+                   double matrix[nblocks][nblocks][bsize][bsize],
+                   const size_t i)
 {
 	const size_t seed = i * nblocks + i, ld = nblocks * bsize;
 	size_t k, l;
@@ -188,10 +166,10 @@ void initialize_matrix_blocked(const size_t nblocks, const size_t bsize,
 {
 	size_t i, j;
 	for (i = 0; i < nblocks; ++i) {
-		task_fill_block_ii(nblocks, bsize, matrix, i);
+		fill_block_ii(nblocks, bsize, matrix, i);
 
 		for (j = i + 1; j < nblocks; ++j)
-			task_fill_block_ij(nblocks, bsize, matrix, i, j);
+			fill_block_ij(nblocks, bsize, matrix, i, j);
 	}
 }
 

@@ -1,6 +1,7 @@
 #include "matvec-mpi-pthreads.h"
 #include <pthread.h>
 #include <assert.h>
+#include <mpi.h>
 
 envinfo _env;
 
@@ -69,7 +70,7 @@ void init(double * const array,
 	}
 
 	for (i = 0; i < lthreads; ++i)
-		pthread_join(threads[i],NULL);
+		pthread_join(threads[i], NULL);
 
 	free(inputs);
 	free(threads);

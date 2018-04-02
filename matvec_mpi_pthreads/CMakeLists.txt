@@ -1,7 +1,7 @@
 # Compilation
 SET(execut matvec-mpi-pthreads)
 
-ADD_EXECUTABLE(${execut} driver.cxx ${execut}.c)
+ADD_EXECUTABLE(${execut} driver.cxx ${execut}.c ${execut}.h)
 TARGET_LINK_LIBRARIES(${execut} common pthread)
 
 # Run test

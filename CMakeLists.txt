@@ -1,39 +1,45 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 3.0)
+cmake_minimum_required (VERSION 3.0)
 
-PROJECT(MPI_BENCHMARKS)
+project(mpi_benchmarks)
 
-ENABLE_TESTING()
-SET(Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4 3.3 3.2 3.1)
-FIND_PACKAGE(PythonInterp MODULE)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-SET(CMAKE_CXX_STANDARD 11)
-SET(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
-IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  SET(OMPFLAG "-qopenmp")
-  SET(FLAGS "-link_mpi=opt_mt -O2")
-ELSEIF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  SET(OMPFLAG "-fopenmp")
-  SET(FLAGS "-O2 -lrt")
-ENDIF()
+enable_testing()
+set(Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4 3.3 3.2 3.1)
+find_package(PythonInterp MODULE)
 
-SET(CMAKE_C_COMPILER mpicc)
-SET(CMAKE_CXX_COMPILER mpicxx)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS} ${OMPFLAG}")
-SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} ${FLAGS} ${OMPFLAG}")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  set(OMPFLAG "-qopenmp")
+  set(FLAGS "-link_mpi=opt_mt -O2")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  set(OMPFLAG "-fopenmp")
+  set(FLAGS "-O2 -lrt")
+else()
+  message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
+endif ()
 
-ADD_DEFINITIONS(-DEXECUTABLE_TYPE="nanos6")
+set(CMAKE_C_COMPILER mpicc)
+set(CMAKE_CXX_COMPILER mpicxx)
 
-FILE(GLOB dirlist ${PROJECT_SOURCE_DIR}/*_mpi*)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS} ${OMPFLAG}")
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} ${FLAGS} ${OMPFLAG}")
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/common)
-ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/common)
+add_definitions(-DEXECUTABLE_TYPE="mpi")
 
-FOREACH(thedir ${dirlist})
-  ADD_SUBDIRECTORY(${thedir})
-ENDFOREACH()
+file(GLOB dirlist ${PROJECT_SOURCE_DIR}/*_mpi*)
 
-SET(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build/install)
+include_directories(${PROJECT_SOURCE_DIR}/common)
+add_subdirectory(${PROJECT_SOURCE_DIR}/common)
 
-CONFIGURE_FILE(extrae_template.xml extrae_template.xml COPYONLY)
+foreach (thedir ${dirlist})
+  add_subdirectory(${thedir})
+endforeach ()
+
+set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build/install)
+
+configure_file(extrae_template.xml extrae_template.xml COPYONLY)

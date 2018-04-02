@@ -2,3 +2,5 @@
 *.mat
 *.x
 build*
+*.json
+.ycm_extra_conf.py

@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 	Initialize(&argc, &argv, dim, nth);
 
 	cout << "Initialized in process " << _env.rank << endl;
-
+	
 	const size_t ldimA=_env.ldim*dim;        //_env.ldim is the fraction dim/N
 	const size_t dimA = (_env.IprintA ? dim : _env.ldim);
 	const size_t dimC = (_env.IprintC ? dim : _env.ldim);
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 		cout << "Starting algorithm" << endl;
 		timer.start(); // =============================
 	}
-
+	
 	// Gather B to all
 	MPI_Allgather(MPI_IN_PLACE, _env.ldim, MPI_DOUBLE,
 	              B, _env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);

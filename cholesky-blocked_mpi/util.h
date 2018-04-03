@@ -13,10 +13,21 @@
 
 #ifdef HAVE_MKL_H
 #   include <mkl.h>
+#   define calloc(x, y) mkl_calloc(x, y, 128)
+#   define malloc(x) mkl_malloc(x, 128)
+#   define free(x)   mkl_free(x)
 #else
 #   include <cblas.h>
 #   include <lapacke.h>
+#   define malloc(x) _mm_malloc(x, 128)
+#   define free(x)   _mm_free(x)
 #endif
+
+inline double getT(struct timeval t1, struct timeval t2) {
+	double elapsed = 1000000.0 * (t2.tv_sec - t1.tv_sec);
+	elapsed += t2.tv_usec - t1.tv_usec;
+	return elapsed;
+}
 
 void check_factorization(const size_t n, double A1[n][n], double A2[n][n],
 	                         const size_t lda, const double eps);

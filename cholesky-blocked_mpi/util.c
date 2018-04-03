@@ -9,6 +9,8 @@ void check_factorization(const size_t n,
 	double *Residual = malloc( len );
 	double *L1       = malloc( len );
 	double *L2       = malloc( len );
+	assert(L1 && L2 && Residual);
+
 	memset( L1, 0, len );
 	memset( L2, 0, len );
 

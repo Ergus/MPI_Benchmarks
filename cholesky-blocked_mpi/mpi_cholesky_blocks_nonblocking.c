@@ -18,13 +18,14 @@ void cholesky(size_t nblocks, size_t bsize, size_t rank, size_t wsize,
 
 	double (*buffer)[bsize][bsize] = NULL;
 	double (*buffer0)[lblocks][bsize][bsize] = NULL;
-	MPI_Request *requests = NULL;
+	MPI_Request requests[nrequests];
 	MPI_Request send_request;
 
 	if (rank) {
+
 		buffer0 = malloc(2 * lblocks * bsize2 * sizeof(double)); //buffer[i:nblocks]
 		buffer = malloc((wsize - rank) * lblocks * bsize2 * sizeof(double)); //buffer[i:nblocks]
-		requests = malloc(nrequests * sizeof(MPI_Request));
+		assert(buffer && buffer0);
 
 		MPI_Irecv((void *) buffer0[0], doubles_region, MPI_DOUBLE,
 			          0, rank, MPI_COMM_WORLD, &requests[0]);
@@ -38,13 +39,12 @@ void cholesky(size_t nblocks, size_t bsize, size_t rank, size_t wsize,
 	}
 
 	// Wait data until my turn
-	for(Ri = 0; Ri < first_block; ++Ri) { // Process rows from previous processes until get here
+	for (Ri = 0; Ri < first_block; ++Ri) { // Process rows from previous processes until get here
 		const size_t next_Ri =  Ri + 1;
 		const int source = next_Ri / lblocks;
 		const int tag = next_Ri << 16;
 
 		const size_t buff0index = Ri%2;
-
 		MPI_Wait(&requests[0], MPI_STATUS_IGNORE);
 
 		if (next_Ri < first_block) {
@@ -77,13 +77,13 @@ void cholesky(size_t nblocks, size_t bsize, size_t rank, size_t wsize,
 				MPI_Irecv((void *) buffer[local_first_block], doubles_region, MPI_DOUBLE,
 				         source, rtag, MPI_COMM_WORLD, &requests[localindex]);
 		}
+
 	}
 
 	// Process my rows
 	for (Rl = 0; Rl < lblocks; ++Rl) { // Process my blocks
 
 		oss_potrf(bsize, A[Rl][first_block + Rl]);      // Diagonal Block Factorization
-
 		// regions first to send them
 		for (region = rank + 1; region < wsize; ++region) {
 			for (j = 0; j < lblocks; ++j) {
@@ -115,10 +115,9 @@ void cholesky(size_t nblocks, size_t bsize, size_t rank, size_t wsize,
 	}
 
 	if (rank) {
+		free(buffer0);
 		free(buffer);
-		free(requests);
 		}
-
 	MPI_Barrier(MPI_COMM_WORLD);
 }
 
@@ -153,12 +152,14 @@ int main(int argc, char **argv)
 
 	assert(ld % bsize == 0);
 	assert((ld / bsize) % wsize == 0);
+	assert(ld >= bsize * wsize);
 
+	fprintf(stderr,"# Wsize: %d Rank: %d \n", rank, wsize);
 	//========= End Command Line ===============
 	const size_t elements = ld * ld;
 	const size_t lelements = ld * ld / wsize;
 	const size_t nblocks = ld / bsize;           // Total number of blocks
-	struct timeval start, stop;
+	struct timeval t[5];
 	MPI_Request req;
 
 	//=============== Arrays ===================
@@ -167,16 +168,13 @@ int main(int argc, char **argv)
 	double (*factorized)[ld] = NULL;
 
 	if (!rank) {
-		printf("%-20s -> %s\n" ,"BENCHMARK", argv[0]);
-		printf("%-20s -> %lu\n","SIZE"     , ld);
-		printf("%-20s -> %lu\n","BSIZE"    , bsize);
-		printf("%-20s -> %d\n" ,"CHECK"    , check);
-
 		//======= Allocate matrices ===============
 		matrix = malloc(elements * sizeof(double));
+		assert(matrix);
 
+		gettimeofday(&t[0], NULL);
 		initialize_matrix_blocked(nblocks, bsize, matrix);
-
+		gettimeofday(&t[1], NULL);
 		MPI_Iscatter((double *)matrix, lelements, MPI_DOUBLE,
 		             MPI_IN_PLACE, lelements, MPI_DOUBLE,
 		             0, MPI_COMM_WORLD, &req);
@@ -184,6 +182,7 @@ int main(int argc, char **argv)
 		if (check) {
 			original = malloc(elements * sizeof(double));
 			factorized = malloc(elements * sizeof(double));
+			assert(original && factorized);
 
 			blocked2flat(nblocks, bsize, ld, matrix, original);
 			write_matrix_blocked("orig.txt", nblocks, bsize, matrix);
@@ -191,34 +190,41 @@ int main(int argc, char **argv)
 		}
 
 		MPI_Wait(&req, MPI_STATUS_IGNORE);
-
+		gettimeofday(&t[2], NULL);
 		// ===========================================
-		printf("Executing the factorization...\n");
-		gettimeofday(&start, NULL);
+		printf("# Executing the factorization...\n");
+		gettimeofday(&t[3], NULL);
 		cholesky(nblocks, bsize, rank, wsize, matrix);
-		gettimeofday(&stop, NULL);
+		gettimeofday(&t[4], NULL);
 		// ===========================================
 
 		MPI_Gather(MPI_IN_PLACE, lelements, MPI_DOUBLE,
 		           (double *) matrix, lelements, MPI_DOUBLE,
 		           0, MPI_COMM_WORLD);
+		gettimeofday(&t[5], NULL);
 
-		double elapsed = 1000000.0 * (stop.tv_sec - start.tv_sec);
-		elapsed += stop.tv_usec - start.tv_usec;
-
+		double elapsed = getT(t[3],t[4]);
 		double gflops = (ld * ld * ld) / (elapsed * 3.0e+3);
-		printf(  "%-20s -> %f\n"  , "PERFORMANCE(GFlops)", gflops);
-		printf(  "%-20s -> %f\n"  , "TIME(s)"            , elapsed);
+
+		printf("%-20s -> %s\n" ,"BENCHMARK", argv[0]);
+		printf("%-20s -> %lu\n","SIZE"     , ld);
+		printf("%-20s -> %lu\n","BSIZE"    , bsize);
+		printf("%-20s -> %d\n" ,"CHECK"    , check);
+		printf("%-20s -> %lf\n"  , "PERFORMANCE(GFlops)" , gflops);
+		printf("%-20s -> %lf\n"  , "TIME(init)"          , getT(t[0],t[1]));
+		printf("%-20s -> %lf\n"  , "TIME(scatter)"       , getT(t[1],t[2]));
+		printf("%-20s -> %lf\n"  , "TIME(cholesky)"      , elapsed);
+		printf("%-20s -> %lf\n"  , "TIME(gather)"        , getT(t[4],t[5]));
 
 		//======== Check if set =====================
 		if (check) {
 			blocked2flat(nblocks, bsize, ld, matrix, factorized);
 
-			printf("Writting after\n");
+			printf("# Writting after\n");
 			write_matrix_blocked("fact.txt", nblocks, bsize, matrix);
 			write_matrix("fact_flat.txt", ld, factorized);
 
-			printf("Checking the correctness of the factorization...\n");
+			printf("# Checking the correctness of the factorization...\n");
 			const double EPS = BLAS_dfpinfo(blas_eps);
 			check_factorization(ld, original, factorized, ld, EPS);
 
@@ -228,6 +234,7 @@ int main(int argc, char **argv)
 
 	} else {
 		matrix = malloc(lelements * sizeof(double));
+		assert(matrix);
 		MPI_Iscatter(NULL, 0, 0,
 		            matrix, lelements, MPI_DOUBLE,
 		            0, MPI_COMM_WORLD, &req);
@@ -242,4 +249,7 @@ int main(int argc, char **argv)
 
 	free(matrix);
 	MPI_Finalize();
+
+	fprintf(stderr, "# Process %d Finalized\n", rank);
+	return 0;
 	}

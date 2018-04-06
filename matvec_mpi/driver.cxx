@@ -21,14 +21,16 @@ int main(int argc, char** argv)
 	OptionalCommandLineParameter<string> pref("prefix", "MTV", "Prefix");
 	CommandLine::validate();
 
-	cout << "Initialized in process %d\n" << _env.rank;
+	cout << "Initialized in process" << _env.rank << endl;
 	Initialize(&argc, &argv, dim, nth);
 
 	const size_t ldimA=_env.ldim*dim;        //_env.ldim is the fraction dim/N
 	const size_t dimA = (_env.IprintA ? dim : _env.ldim);
 	const size_t dimC = (_env.IprintC ? dim : _env.ldim);
 
+	Timer timer("algorithm_time", "Execution time");
 	Timer total_time("total_time", "Total execution time");
+
 	double* A = (double*) malloc(dimA * dim * sizeof(double));
 	double* B = (double*) malloc(dim * sizeof(double));
 	double* C = (double*) calloc(dimC, sizeof(double));
@@ -41,23 +43,24 @@ int main(int argc, char** argv)
 	init(lA, _env.ldim, dim);
 	init(lB, _env.ldim, 1);
 
-	Timer timer("algorithm_time", "Execution time");
+	//==========================================================================	
 	if (_env.rank == 0){
 		cout << "Starting algorithm" << endl;
 		timer.start(); // =============================
 	}
-
 	// Gather B to all
 	MPI_Allgather(MPI_IN_PLACE, _env.ldim, MPI_DOUBLE,
 	              B, _env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
 
 	// Multiplication
-	for(size_t i = 0; i < its; ++i)
-		matvec(lA, B, lC, _env.ldim, dim);
+ 	for(size_t i = 0; i < its; ++i)
+		matvec(lA, B, lC, _env.ldim, _env.dim);
+
+	timer.stop();
+	// =========================================================================
+	total_time.stop();
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	timer.stop();      // =============================
-	total_time.stop();
 
 	cout << "Finished algorithm..." << endl;
 

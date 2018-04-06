@@ -25,6 +25,14 @@ void Initialize(int *argc, char ***argv,
 	_env.IprintA = (_env.rank == 0);						// prints A
 	_env.IprintB = (imin(1,_env.worldsize-1) == _env.rank); // prints B
 	_env.IprintC = (imin(2,_env.worldsize-1) == _env.rank); // prints C
+
+	// test that the cpuset > number of threads
+	cpu_set_t mask;
+	int ret = sched_getaffinity(0, sizeof(mask), &mask);
+	myassert(ret == 0);
+
+	_env.cpu_count = CPU_COUNT(&mask);
+	myassert(_env.cpu_count >= lthreads);
 }
 
 void Finalize()
@@ -32,16 +40,16 @@ void Finalize()
 	MPI_Finalize();
 }
 
-void init(double * __restrict__ array,
+void init(double * const __restrict__ array,
           const size_t rows, const size_t cols)
 {
 	size_t i;
 	const size_t fullsize = rows * cols;
-	#pragma omp parallel
+	#pragma omp parallel private (i)
 	{
 		srand(_env.first_local_thread + omp_get_thread_num());
 
-		#pragma omp for private (i)
+		#pragma omp for
 		for(i = 0; i < fullsize; ++i) {
 			array[i] = frand();
 		}
@@ -50,12 +58,12 @@ void init(double * __restrict__ array,
 
 void matvec(const double * const __restrict__ A,
             const double * const __restrict__ B,
-            double* const __restrict__ C,
+            double * const __restrict__ C,
             const size_t rowsA, const size_t colsA)
 {
-	size_t i,j;
+	size_t i, j;
 
-	#pragma omp parallel for private (i,j)
+	#pragma omp parallel for private(i,j)
 	for (i = 0; i < rowsA; ++i) {
 		double sum=0.0;
 		for (j = 0; j < colsA; ++j) {

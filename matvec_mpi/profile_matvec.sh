@@ -63,11 +63,11 @@ for size in ${l_sizes[@]}; do
     for nodes in ${l_nodes[@]}; do
 	for threads in ${l_threads[@]}; do
 	    for ((it=0; it<iterations; ++it)); do
-		prefix="sz_${size}_nr_${node}_tr_${threads}_it_${it}"
+		prefix="sz_${size}_nr_${nodes}_tr_${threads}_it_${it}"
 		ofile="${res_dir}/${prefix}.out"
 		efile="${res_dir}/${prefix}.err"
 
-		echo "Submiting: ${size} ${node} ${threads} ${it}"
+		echo "Submiting: sz: ${size} nr: ${nodes} tr: ${threads} it: ${it}"
 		
 		if ( $with_extrae ); then	   
 		    sed -e "s|PREFIX|${prefix}|"                  \

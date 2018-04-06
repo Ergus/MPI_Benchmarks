@@ -2,6 +2,11 @@
 #ifndef matmul_h
 #define  matmul_h
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include <sched.h>
 #include "benchmarks.h"
 
 #ifdef __cplusplus
@@ -10,7 +15,7 @@ extern "C" {
 
 	typedef struct{
 		int rank, worldsize;
-		size_t dim, tthreads;
+		size_t dim, tthreads, cpu_count;
 		size_t ldim, lthreads, first_local_thread;
 		bool IprintA, IprintB, IprintC;
 	} envinfo;
@@ -23,9 +28,9 @@ extern "C" {
 	void init(double * const __restrict__ array,
 	          const size_t rows, const size_t cols);
 
-    void matvec(const double * const __restrict__ A,
+	void matvec(const double * const __restrict__ A,
 				const double * const __restrict__ B,
-				double * __restrict__ C,
+				double * const __restrict__ C,
 				const size_t rowsA, const size_t colsA);
 
     void __print(const double * const mat,

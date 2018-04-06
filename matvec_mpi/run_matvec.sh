@@ -16,4 +16,4 @@ if ( WITHEXTRAE ); then
     export LD_PRELOAD=${EXTRAE_HOME}/lib/libompitrace.so
 fi
 
-mpirun -np NODES ./matvec_mpi/matvec-allgather SIZE THREADS ITS
+mpirun -np NODES taskset -c 0-15 ./matvec_mpi/matvec-allgather SIZE THREADS ITS

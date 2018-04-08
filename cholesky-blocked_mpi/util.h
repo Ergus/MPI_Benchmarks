@@ -10,10 +10,11 @@
 #include <mpi.h>
 #include <string.h>
 #include <math.h>
+#include <mm_malloc.h>
 
 #ifdef HAVE_MKL_H
 #   include <mkl.h>
-#   define calloc(x, y) mkl_calloc(x, y, 128)
+#   define calloc(x, y) mkl_calloc(x, y, 64)
 #   define malloc(x) mkl_malloc(x, 128)
 #   define free(x)   mkl_free(x)
 #else

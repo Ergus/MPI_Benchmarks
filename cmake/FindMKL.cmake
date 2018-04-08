@@ -4,10 +4,11 @@
 # Options:
 #
 #   MKL_STATIC        :   use static linking
+#   MKL_INT64         :   use long int instead of int
 #   MKL_MULTI_THREADED:   use multi-threading
-#   CMAKE_OMP_LIB   :     omp library to use (imp5 | gomp)
-#   CMAKE_MPI_LIB   :     mpi library to use (openmpi | impi | mpich2)
-#   MKL_WITH_SCALAPACK:   use scalapack?
+#   MKL_OMP_LIB       :   omp library to use (imp5 | gomp)
+#   MKL_MPI_LIB       :   mpi library to use (openmpi | intelmpi)
+#   MKL_SCALAPACK     :   use scalapack?
 #
 # This module defines the following variables:
 #
@@ -26,20 +27,28 @@ include(FindPackageHandleStandardArgs)
 set(MKLROOT $ENV{MKLROOT})
 
 set(MKL_VALID_OMP iomp5 gomp)
-set(MKL_VALID_MPI openmpi impi mpich2)
+set(MKL_VALID_MPI openmpi intelmpi)
+
+if (MKL_FIND_REQUIRED)
+  set(MESSTYPE FATAL_ERROR)
+else ()
+  set(MESSTYPE STATUS)
+endif ()
 
 if (NOT MKLROOT)
-  message(FATAL_ERROR "Environment variable MKLROOT is empty. Load MKL")
+  message(${MESSTYPE} "Environment variable MKLROOT is empty.")
 elseif (NOT EXISTS ${MKLROOT}) #if set, test it
-  message(FATAL_ERROR "Directory ${MKLROOT} doesn't exist")
+  message(${MESSTYPE} "Directory ${MKLROOT} doesn't exist")
 endif()
+
 
 message(STATUS "MKLROOT: ${MKLROOT}")
 message(STATUS "MKL_STATIC: ${MKL_STATIC}")
+message(STATUS "MKL_INT64: ${MKL_INT64}")
 message(STATUS "MKL_MULTI_THREADED: ${MKL_MULTI_THREADED}")
-message(STATUS "MKL_WITH_SCALAPACK: ${MKL_WITH_SCALAPACK}")
-message(STATUS "CMAKE_OMP_LIB: ${CMAKE_OMP_LIB}")
-message(STATUS "CMAKE_MPI_LIB: ${CMAKE_MPI_LIB}")
+message(STATUS "MKL_OMP_LIB: ${MKL_OMP_LIB}")
+message(STATUS "MKL_MPI_LIB: ${MKL_MPI_LIB}")
+message(STATUS "MKL_SCALAPACK: ${MKL_MPI_LIB}")
 
 # Find headers
 find_path(MKL_INCLUDE_DIR mkl.h ${MKLROOT}/include)
@@ -54,17 +63,18 @@ else ()
   set(CMAKE_FIND_LIBRARY_SUFFIXES .so)
 endif ()
 
-# Libraries according to architecture
+# Libraries initialization
 set(MKL_LIBS_LIST mkl_core)
 set(MKL_LIBS_FOUND "")
-set(MKL_EXTRA_LINKS "-lpthread -lm -ldl")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set(MKL_EXTRA_LINKS "-Wl,--no-as-needed ${MKL_EXTRA_LINKS}")
+  set(MKL_EXTRA_LINKS "-Wl,--no-as-needed -lpthread -lm -ldl")
+else (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+  set(MKL_EXTRA_LINKS "-lpthread -lm -ldl")
 endif ()
 
-#Threads
-if (MKL_MULTI_THREADED OR MKL_WITH_SCALAPACK)  # Search the omp library if multi-threaded
+#Threads (OpenMP)
+if (MKL_MULTI_THREADED)  # Search the omp library if multi-threaded
   # Find lib for openmp
   if (CMAKE_OMP_LIB IN_LIST MKL_VALID_OMP) # if declared test it
 	set(OMP_NAME ${CMAKE_OMP_LIB})
@@ -82,7 +92,7 @@ if (MKL_MULTI_THREADED OR MKL_WITH_SCALAPACK)  # Search the omp library if multi
   elseif (OMP_NAME STREQUAL "iomp5")
 	list(APPEND MKL_LIBS_LIST mkl_intel_thread)
   else ()
-	message(FATAL_ERROR "The OMP library set is wrong for MKL")
+	message(${MESSTYPE} "The OMP library set is wrong for MKL")
   endif ()
 else ()
   list(APPEND MKL_LIBS_LIST mkl_sequential)
@@ -91,30 +101,43 @@ endif ()
 # Set parameters dependent of the architecture
 if (CMAKE_SIZEOF_VOID_P EQUAL 8) # 64 bit
   set(MKL_LIB_PATH "${MKLROOT}/lib/intel64")
-  list(APPEND MKL_LIBS_LIST mkl_intel_ilp64)
-  set(MKL_DEFINITIONS "-DMKL_ILP64 -m64")
-  if (MKL_WITH_SCALAPACK) # Scalapack only makes sense in 64 bits
-	list(APPEND MKL_LIBS_LIST mkl_scalapack_lp64)
+  set(SUF "lp64")    # default MKL_INT = int
+  set(MKL_DEFINITIONS "-m64")
 
-	if (CMAKE_MPI_LIB)
+  #integer size
+  if (MKL_INT64)
+	set(SUF "ilp64")
+	set(MKL_DEFINITIONS "-DMKL_ILP64 -m64")
+  endif ()
+
+  list(APPEND MKL_LIBS_LIST "mkl_intel_${SUF}")
+
+  if (MKL_SCALAPACK)
+	list(APPEND MKL_LIBS_LIST "mkl_scalapack_${SUF}")
+
+	if (CMAKE_MPI_LIB) # User defined MPI library
 	  if (CMAKE_MPI_LIB IN_LIST MKL_VALID_MPI)
 		set(MPI_NAME ${CMAKE_MPI_LIB})
 	  else ()
-		message(FATAL_ERROR "The MPI library set is unknown for MKL")
+		message(${MESSTYPE} "The MPI library set is unknown for MKL")
 	  endif ()
-	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	  set(MPI_NAME openmpi)
-	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-	  set(MPI_NAME iomp5)
-	else()
-	  set(MPI_NAME mpich2)
-	endif ()
-
-	if (MPI_NAME STREQUAL "openmpi")
-	  list(APPEND MKL_LIBS_LIST mkl_blacs_openmpi_ilp64)
 	else ()
-	  list(APPEND MKL_LIBS_LIST mkl_blacs_intelmpi_ilp64)
+	  execute_process(
+		COMMAND mpirun -V
+		OUTPUT_VARIABLE MPI_OUT
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+	  if (MPI_OUT MATCHES "Open MPI")
+		set(MPI_NAME openmpi)
+	  elseif (MPI_OUT MATCHES "Intel")
+		set(MPI_NAME intelmpi)
+	  else ()
+		message(${MESSTYPE} "no valid mpirun found")
+	  endif ()
+	  # Add blacs dependent of mpi and integer version
+	  list(APPEND MKL_LIBS_LIST mkl_blacs_${MPI_NAME}_${SUF})
 	endif ()
+	message(STATUS "mpi for mkl: ")
   endif ()
 else () # 32 bits
   set(MKL_LIB_PATH "${MKLROOT}/lib/ia32")
@@ -124,7 +147,7 @@ endif ()
 
 # Check the validity of lib path
 if (NOT EXISTS ${MKL_LIB_PATH})
-  message(FATAL_ERROR "The MKL_LIB_PATH: ${MKL_LIB_PATH} does not exist")
+  message(${MESSTYPE} "The MKL_LIB_PATH: ${MKL_LIB_PATH} does not exist")
 endif ()
 
 # Search all the libraries in the list
@@ -135,6 +158,7 @@ foreach (thelib ${MKL_LIBS_LIST})
   list(APPEND MKL_LIBS_FOUND ${FOUND_LIB})
 endforeach ()
 
+# Restore sufixes
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_MKL_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 
 find_package_handle_standard_args(MKL DEFAULT_MSG

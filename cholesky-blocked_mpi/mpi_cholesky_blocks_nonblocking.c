@@ -206,15 +206,16 @@ int main(int argc, char **argv)
 		double elapsed = getT(t[3],t[4]);
 		double gflops = (ld * ld * ld) / (elapsed * 3.0e+3);
 
-		printf("%-20s -> %s\n" ,"BENCHMARK", argv[0]);
-		printf("%-20s -> %lu\n","SIZE"     , ld);
-		printf("%-20s -> %lu\n","BSIZE"    , bsize);
-		printf("%-20s -> %d\n" ,"CHECK"    , check);
-		printf("%-20s -> %lf\n"  , "PERFORMANCE(GFlops)" , gflops);
-		printf("%-20s -> %lf\n"  , "TIME(init)"          , getT(t[0],t[1]));
-		printf("%-20s -> %lf\n"  , "TIME(scatter)"       , getT(t[1],t[2]));
-		printf("%-20s -> %lf\n"  , "TIME(cholesky)"      , elapsed);
-		printf("%-20s -> %lf\n"  , "TIME(gather)"        , getT(t[4],t[5]));
+		printf("%-20s -> %s\n" ,"BENCHMARK"            , argv[0]);
+		printf("%-20s -> %lu\n", "WSIZE"     		   , wsize);
+		printf("%-20s -> %lu\n","SIZE"     			   , ld);
+		printf("%-20s -> %lu\n","BSIZE"    			   , bsize);
+		printf("%-20s -> %d\n" ,"CHECK"    			   , check);
+		printf("%-20s -> %lf\n", "PERFORMANCE(GFlops)" , gflops);
+		printf("%-20s -> %lf\n", "TIME(init)"          , getT(t[0],t[1]));
+		printf("%-20s -> %lf\n", "TIME(scatter)"       , getT(t[1],t[2]));
+		printf("%-20s -> %lf\n", "TIME(cholesky)"      , elapsed);
+		printf("%-20s -> %lf\n", "TIME(gather)"        , getT(t[4],t[5]));
 
 		//======== Check if set =====================
 		if (check) {

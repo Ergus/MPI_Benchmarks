@@ -44,3 +44,5 @@ foreach (conffile ${CONF_SOURCES})
   get_filename_component(conffile ${conffile} NAME)  # delete path
   CONFIGURE_FILE(${conffile} ${conffile} COPYONLY)
 endforeach()
+
+CONFIGURE_FILE(cholesky.awk cholesky.awk COPYONLY)

@@ -22,7 +22,7 @@
 #  https://software.intel.com/en-us/articles/intel-mkl-link-line-advisor
 
 include(FindPackageHandleStandardArgs)
-
+cmake_policy(SET CMP0057 NEW)
 # GEt environment MKLROOT and test it
 set(MKLROOT $ENV{MKLROOT})
 

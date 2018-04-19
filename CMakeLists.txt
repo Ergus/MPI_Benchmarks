@@ -43,3 +43,4 @@ endforeach ()
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build/install)
 
 configure_file(extrae_template.xml extrae_template.xml COPYONLY)
+configure_file(argparse.sh argparse.sh COPYONLY)

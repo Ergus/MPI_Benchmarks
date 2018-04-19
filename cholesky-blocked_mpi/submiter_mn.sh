@@ -1,47 +1,51 @@
 #!/bin/bash
 
-if [ $# -ge 1 ] && [ -f $1 ]; then
-   echo "Adding Jobs for: "${1}
-else
-	echo "No file: "$1
-	echo "Usage ./$0 cholesky_executable [tasks]"
-	exit
-fi
+source parser.sh
 
-[ $# -ge 2 ] && tasks=$2 || tasks=1
+add_argument -a x -l exe -h "Executable file"
+add_argument -a i -l iter -h "Repetitions default[1]" -d 1
+add_argument -a e -l extrae -h "Use extrae? default false" -b
+parse_args "$@"
+
+printargs
 
 nodes=(1 2 4 8 16 32)
-blocksize=(64 128 256 512)
-dims=(1024 2048 4096 8192 16384)
+blocksize=(64 256 512)
+dims=(1024 4096 8192 16384)
 
 # nodes=(1 2)
 # blocksize=(64)
 # dims=(1024)
 
-now=$(date +%F_%T)
-resdir="results_${now}"
+now=$(date +%F_%H-%M-%S)
+name=${ARGS[x]/%.nanos6}
+resdir="results/${name}_${now}"
 
-mkdir ${resdir}
+mkdir -p ${resdir}
 
+echo "Directory ${resdir}"
 echo "Submitting group"
 echo "nodes ${nodes[@]}"
 echo "blocks ${blocksize[@]}"
 echo "dim ${dims[@]}"
 
 for dim in ${dims[@]}; do
-	for bs in ${blocksize[@]}; do
-		for node in ${nodes[@]}; do
+	for node in ${nodes[@]}; do
+		for bs in ${blocksize[@]}; do
 
 			if [ $((node*bs<=dim)) = 1 ]; then
 				printf "Submitting combination dim: %s bs: %s nodes: %s\n" \
 					   $dim $bs $node
 				jobname="mpi_${dim}_${bs}_${node}"
+				filename="${resdir}/${jobname}"
+
  				sbatch --ntasks=${node} \
-					   --array=1-${tasks} \
+					   --time=01:00:00 \
+					   --array=1-${ARGS[i]}  \
  					   --job-name=${jobname} \
  					   --output="${resdir}/%x_%2a_%j.out" \
  					   --error="${resdir}/%x_%2a_%j.err" \
- 					   ./submit_mn.sh $1 ${dim} ${bs} 0
+ 					   ./submit_mn.sh ${ARGS[x]} ${dim} ${bs} 0
 			else
 				printf "Jump combination dim: %s bs: %s nodes: %s\n" \
 					   $dim $bs $node
@@ -49,3 +53,4 @@ for dim in ${dims[@]}; do
 		done
 	done
 done
+

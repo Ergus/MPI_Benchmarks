@@ -45,4 +45,5 @@ foreach (conffile ${CONF_SOURCES})
   CONFIGURE_FILE(${conffile} ${conffile} COPYONLY)
 endforeach()
 
-CONFIGURE_FILE(cholesky.awk cholesky.awk COPYONLY)
+configure_file(cholesky.awk cholesky.awk COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/argparse.sh argparse.sh COPYONLY)

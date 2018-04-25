@@ -65,3 +65,4 @@ foreach (conffile ${CONF_SOURCES})
 endforeach()
 
 configure_file(cholesky.awk cholesky.awk COPYONLY)
+configure_file(cholesky_babis.awk cholesky_babis.awk COPYONLY)

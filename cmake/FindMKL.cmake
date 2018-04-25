@@ -68,31 +68,34 @@ set(MKL_LIBS_LIST mkl_core)
 set(MKL_LIBS_FOUND "")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set(MKL_EXTRA_LINKS "-Wl,--no-as-needed -lpthread -lm -ldl")
+  set(MKL_LINKS -Wl,--no-as-needed -lpthread -lm -ldl)
 else (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-  set(MKL_EXTRA_LINKS "-lpthread -lm -ldl")
+  set(MKL_LINKS "-lpthread -lm -ldl")
 endif ()
 
 #Threads (OpenMP)
 if (MKL_MULTI_THREADED)  # Search the omp library if multi-threaded
   # Find lib for openmp
-  if (CMAKE_OMP_LIB IN_LIST MKL_VALID_OMP) # if declared test it
-	set(OMP_NAME ${CMAKE_OMP_LIB})
-  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	set(OMP_NAME gomp)
+  if (MKL_OMP_LIB IN_LIST MKL_VALID_OMP) # if declared test it
+	set(OMP_NAME ${MKL_OMP_LIB})
   else ()
-	set(OMP_NAME iomp5)
-  endif ()
+	message(STATUS "${MKL_OMP_LIB} not in the list: ${MKL_VALID_OMP}")
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	  set(OMP_NAME gomp)
+	else ()
+	  set(OMP_NAME iomp5)
+	endif ()
+  endif()
   message(STATUS "OMP_NAME: ${OMP_NAME}")
 
   # After searched or set, test and append properly
-  list(APPEND MKL_EXTRA_LINKS "-l${OMP_NAME}") # adds -liomp5 or -lgomp
+  list(APPEND MKL_LINKS "-l${OMP_NAME}") # adds -liomp5 or -lgomp
   if (OMP_NAME STREQUAL "gomp")
 	list(APPEND MKL_LIBS_LIST mkl_gnu_thread)
   elseif (OMP_NAME STREQUAL "iomp5")
 	list(APPEND MKL_LIBS_LIST mkl_intel_thread)
   else ()
-	message(${MESSTYPE} "The OMP library set is wrong for MKL")
+	message(${MESSTYPE} "The OMP (${OMP_NAME}) library set is wrong for MKL")
   endif ()
 else ()
   list(APPEND MKL_LIBS_LIST mkl_sequential)
@@ -165,7 +168,10 @@ find_package_handle_standard_args(MKL DEFAULT_MSG
   MKL_INCLUDE_DIR ${MKL_LIBS_LIST})
 
 if(MKL_FOUND)
+  string(REPLACE ";" " " MKL_EXTRA_LINKS "${MKL_LINKS}")
+
   set(MKL_INCLUDES ${MKL_INCLUDE_DIR})
   set(MKL_LIBRARIES "${MKL_LIBS_FOUND}")
   message(STATUS "MKL_LIBRARIES: ${MKL_LIBRARIES}")
+  message(STATUS "MKL_EXTRA_LINKS: ${MKL_EXTRA_LINKS}")
 endif()

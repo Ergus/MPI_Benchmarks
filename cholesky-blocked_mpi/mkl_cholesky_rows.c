@@ -24,7 +24,7 @@ void usage(int argc, char **argv) {
 int main( int argc, char **argv)
 {
 	struct timeval t[6];
-	int rank, wsize, dims[2] = {0};       // MPI vars
+	int rank, wsize, dims[2] = {1, 0};       // MPI vars
 	int context, pos[2] = {0}, info;      // blacs vars
 	// Fortran interfaces
 	const char order = 'R', trans = 'N';;
@@ -34,6 +34,7 @@ int main( int argc, char **argv)
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &wsize);
+	dims[1] = wsize;
 
 	if (argc < 4) {
 		if(!rank)
@@ -41,8 +42,8 @@ int main( int argc, char **argv)
 		MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ARG);
 	}
 
-	const int ld     = strtoul(argv[1], NULL, 10); // Matrix size
-	const int bsize  = strtoul(argv[2], NULL, 10); // Block size
+	const int  ld    = strtoul(argv[1], NULL, 10); // Matrix size
+	const int  bsize = strtoul(argv[2], NULL, 10); // Block size
 	const bool check = strtoul(argv[3], NULL,  2); // Factorization
 
 	assert(ld % bsize == 0);
@@ -52,11 +53,6 @@ int main( int argc, char **argv)
 	//========= End Command Line ===============
 	const int nblocks = ld / bsize;           // Total number of blocks
 	double *A_full = NULL, *A = NULL, *A_fact = NULL;  // Arrays variables
-
-	//========= MPI proc grid ==================
-	MPI_Dims_create(wsize, 2, dims); // dims = {rows, cols}
-	assert(ld % dims[0] == 0);
-	assert(ld % dims[1] == 0);
 
 	//=========== Blacs ========================
 	blacs_get_(&negone, &zero, &context);
@@ -120,7 +116,7 @@ int main( int argc, char **argv)
 
 		gettimeofday(&t[5], NULL);
 	}
-	
+
 	free(A);                   //  Destroy arrays
 
 	if (!rank) {

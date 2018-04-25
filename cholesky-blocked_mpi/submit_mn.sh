@@ -25,7 +25,8 @@ module load impi/2018.1
 
 echo -e "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
 echo -e "# Nodes: ${SLURM_JOB_NUM_NODES} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
-echo -e "# Nodes_List: ${SLURM_JOB_NODELIST} QOS: ${SLURM_JOB_QOS}"
+echo -e "# Nodes_List: ${SLURM_JOB_NODELIST}"
+echo -e "# QOS: ${SLURM_JOB_QOS}"
 echo -e "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
 echo -e "# Command: ${ARGS[x]} ${ARGS[d]} ${ARGS[b]} 0"
 echo -e "# --------------------------------------\n"

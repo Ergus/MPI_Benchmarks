@@ -35,9 +35,8 @@ int main( int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &wsize);
 
-	if (argc < 4) {
-		if(!rank)
-			usage(argc, argv);
+	if (argc < 4 || !rank) {
+		usage(argc, argv);
 		MPI_Abort(MPI_COMM_WORLD, MPI_ERR_ARG);
 	}
 
@@ -75,7 +74,7 @@ int main( int argc, char **argv)
 		const size_t memsize = ld * ld * sizeof(double);
 		// This is for debug, simplify letter
 		double (*tmp)[nblocks][bsize][bsize] = malloc(memsize);
-		A_full = malloc(memsize);
+		A_full = (double *) malloc(memsize);
 		assert(tmp && A_full);
 
 		gettimeofday(&t[0], NULL);
@@ -120,7 +119,7 @@ int main( int argc, char **argv)
 
 		gettimeofday(&t[5], NULL);
 	}
-	
+
 	free(A);                   //  Destroy arrays
 
 	if (!rank) {

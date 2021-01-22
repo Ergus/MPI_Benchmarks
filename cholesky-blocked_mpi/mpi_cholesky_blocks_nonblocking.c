@@ -86,13 +86,15 @@ void cholesky(size_t nblocks, size_t bsize, size_t rank, size_t wsize,
 		oss_potrf(bsize, A[Rl][first_block + Rl]);      // Diagonal Block Factorization
 		// regions first to send them
 		for (region = rank + 1; region < wsize; ++region) {
-			for (j = 0; j < lblocks; ++j) {
+
+			for (j = 0; j < lblocks; ++j)
 				oss_trsm(bsize, A[Rl][first_block + Rl], A[Rl][region*lblocks + j]);
-			}
+
 			for (dest = rank + 1; dest <= region; ++dest) {
 				int rtag = (first_block + Rl) << 16 | region;
 				MPI_Isend(A[Rl][region*lblocks], doubles_region, MPI_DOUBLE,
-				         dest, rtag, MPI_COMM_WORLD, &send_request);
+				          dest, rtag, MPI_COMM_WORLD, &send_request);
+
 				MPI_Request_free(&send_request);
 			}
 		}
@@ -103,8 +105,8 @@ void cholesky(size_t nblocks, size_t bsize, size_t rank, size_t wsize,
 
 		for (j = Rl + 1; j < lblocks; ++j) { // local triangle
 			for (k = Rl + 1; k < j; ++k)
-				oss_gemm(bsize, A[Rl][first_block + j],
-				         A[Rl][first_block + k], A[k][first_block + j]);
+				oss_gemm(bsize, A[Rl][first_block + j], A[Rl][first_block + k], A[k][first_block + j]);
+
 			oss_syrk(bsize, A[Rl][first_block + j], A[j][first_block + j]);
 		}
 		// absolute indices here in j!!!!!
@@ -114,7 +116,7 @@ void cholesky(size_t nblocks, size_t bsize, size_t rank, size_t wsize,
 		}
 	}
 
-	if (rank) {
+	if (rank > 0) {
 		free(buffer0);
 		free(buffer);
 		}
@@ -236,16 +238,12 @@ int main(int argc, char **argv)
 	} else {
 		matrix = malloc(lelements * sizeof(double));
 		assert(matrix);
-		MPI_Iscatter(NULL, 0, 0,
-		            matrix, lelements, MPI_DOUBLE,
-		            0, MPI_COMM_WORLD, &req);
+		MPI_Iscatter(NULL, 0, 0, matrix, lelements, MPI_DOUBLE, 0, MPI_COMM_WORLD, &req);
 		MPI_Wait(&req, MPI_STATUS_IGNORE);
 
 		cholesky(nblocks, bsize, rank, wsize, matrix);
 
-		MPI_Gather(matrix, lelements, MPI_DOUBLE,
-		           NULL, 0, 0,
-		           0, MPI_COMM_WORLD);
+		MPI_Gather(matrix, lelements, MPI_DOUBLE, NULL, 0, 0, 0, MPI_COMM_WORLD);
 	}
 
 	free(matrix);

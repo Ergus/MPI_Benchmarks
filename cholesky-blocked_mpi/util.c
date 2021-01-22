@@ -1,7 +1,6 @@
 #include "util.h"
 
-void check_factorization(const size_t n,
-                         double A1[n][n], double A2[n][n],
+void check_factorization(const size_t n, double A1[n][n], double A2[n][n],
                          const size_t lda, const double eps)
 {
 	size_t i, j, k;

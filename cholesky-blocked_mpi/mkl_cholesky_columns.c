@@ -117,7 +117,7 @@ int main( int argc, char **argv)
 
 		gettimeofday(&t[5], NULL);
 	}
-	
+
 	free(A);                   //  Destroy arrays
 
 	if (!rank) {

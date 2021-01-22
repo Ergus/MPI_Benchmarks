@@ -39,12 +39,12 @@
 		} \
 	}
 
-#define myassert(x){	  \
-		if(!(x)){ \
-			fprintf(stderr,"Error: %s returned %d\n",#x, x); \
-			printme(); \
-			MPI_Abort(MPI_COMM_WORLD, -1); \
-		} \
+#define myassert(cond) {										\
+		if (!(cond)) {											\
+			fprintf(stderr, "%s%s:%u Assertion `%s' failed.\n", \
+			        __func__, __FILE__, __LINE__, #cond);		\
+			abort();											\
+		}														\
 	}
 
 #ifndef NDEBUG
@@ -80,6 +80,6 @@ std::string toString(const T& t, bool *ok = NULL)
 	return stream.str();
 }
 
-#endif
+#endif // __cplusplus
 
-#endif
+#endif // benchmarks_h

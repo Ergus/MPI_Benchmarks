@@ -1,46 +1,50 @@
-cmake_minimum_required (VERSION 3.0)
+# Copyright (C) 2021  Jimmy Aguilar Mena
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+cmake_minimum_required (VERSION 3.9)  # 3.9 required to use FindOpenMP
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+find_package(MPI REQUIRED)
+find_package(OpenMP REQUIRED)
+message(STATUS "Run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
 
 project(mpi_benchmarks)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+# add the subdirectories here
+add_subdirectory(utils/ArgParserC)
+
+include_directories(utils)
 enable_testing()
+
+configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
+  ${PROJECT_BINARY_DIR}/argparse.sh COPYONLY)
+
+# Python interpreter for test
 set(Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4 3.3 3.2 3.1)
 find_package(PythonInterp MODULE)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR}/*_mpi ${CMAKE_CURRENT_LIST_DIR}/utils)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  set(OMPFLAG "-qopenmp")
-  set(FLAGS "-link_mpi=opt_mt -O2")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  set(OMPFLAG "-fopenmp")
-  set(FLAGS "-O2 -lrt")
-else()
-  message(FATAL_ERROR "Unknown compiler: ${CMAKE_CXX_COMPILER_ID}")
-endif ()
-
-set(CMAKE_C_COMPILER mpicc)
-set(CMAKE_CXX_COMPILER mpicxx)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${FLAGS} ${OMPFLAG}")
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} ${FLAGS} ${OMPFLAG}")
-
-add_definitions(-DEXECUTABLE_TYPE="mpi")
-
-file(GLOB dirlist ${PROJECT_SOURCE_DIR}/*_mpi*)
-
-include_directories(${PROJECT_SOURCE_DIR}/common)
-add_subdirectory(${PROJECT_SOURCE_DIR}/common)
-
-foreach (thedir ${dirlist})
-  add_subdirectory(${thedir})
+foreach (child ${children})
+  if ((IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})
+      AND (EXISTS ${CMAKE_CURRENT_LIST_DIR}/${child}/CMakeLists.txt))
+    message ("-- Adding subdirectory: ${child}")
+    add_subdirectory(${child})
+  endif ()
 endforeach ()
-
-set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build/install)
-
-configure_file(extrae_template.xml extrae_template.xml COPYONLY)
-configure_file(argparse.sh argparse.sh COPYONLY)

@@ -34,7 +34,7 @@
 void matmul_omp(const double *A, const double *B, double * const C,
                 size_t lrowsA, size_t dim, size_t colsBC)
 {
-	//#pragma omp parallel for
+	#pragma omp parallel for
 	for (size_t i = 0; i < lrowsA; ++i) {
 		for (size_t k = 0; k < colsBC; ++k)
 			C[i * colsBC + k] = 0.0;
@@ -43,8 +43,6 @@ void matmul_omp(const double *A, const double *B, double * const C,
 			const double temp = A[i * dim + j];
 
 			for (size_t k = 0; k < colsBC; ++k) {
-				printf("C[%zu * %zu + %zu] += (A[%zu * %zu + %zu] * B[%zu * %zu + %zu])\n",
-				       i, colsBC, k, i, dim, j, j, colsBC, k);
 				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
 			}
 		}

@@ -13,18 +13,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.9)  # 3.9 required to use FindOpenMP
+# 3.9 required to use FindOpenMP
+# 3.12.4 required to use FindPython
+cmake_minimum_required(VERSION 3.12.4)
 
 project(mpi_benchmarks)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 message(STATUS "Run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
-
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# Python interpreter for test
+find_package(Python REQUIRED COMPONENTS Interpreter NumPy)
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)
@@ -34,10 +38,6 @@ enable_testing()
 
 configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
   ${PROJECT_BINARY_DIR}/argparse.sh COPYONLY)
-
-# Python interpreter for test
-set(Python_ADDITIONAL_VERSIONS 3.7 3.6 3.5 3.4 3.3 3.2 3.1)
-find_package(PythonInterp MODULE)
 
 file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*_mpi)
 

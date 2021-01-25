@@ -42,12 +42,12 @@ add_test(NAME Test_matvec
 # CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)
 
 # python test
-IF(PYTHONINTERP_FOUND)
+if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
   CONFIGURE_FILE(prove.py prove.py)
   ADD_TEST(NAME Test_matmul_results
-    COMMAND python3 prove.py matmul_A.mat matmul_B.mat matmul_C.mat)
+    COMMAND ${Python_EXECUTABLE} prove.py matmul_A.mat matmul_B.mat matmul_C.mat)
   ADD_TEST(NAME Test_matvec_results
-    COMMAND python3 prove.py matvec_A.mat matvec_B.mat matvec_C.mat)
-ELSE()
+    COMMAND ${Python_EXECUTABLE} prove.py matvec_A.mat matvec_B.mat matvec_C.mat)
+else ()
   MESSAGE("Python interpreter not found")
-ENDIF() # PYTHONINTERP_FOUND
+endif () # PYTHONINTERP_FOUND

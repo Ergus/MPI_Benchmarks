@@ -6,25 +6,25 @@ import sys
 import numpy as np
 
 def main(args):
-    if (len(args)<4):
+    if (len(args) < 4):
         print("Usage: executable a_value initial_x initial_y final_y")
         sys.exit(1)
 
-    A=np.genfromtxt(args[1])
-    B=np.genfromtxt(args[2])
-    C=np.genfromtxt(args[3])
+    A = np.genfromtxt(args[1])
+    B = np.genfromtxt(args[2])
+    C = np.genfromtxt(args[3])
 
-    C2=A.dot(B)
-    L1=np.amax(np.abs(C-C2))
+    C2 = A.dot(B)
+    L1 = np.amax(np.abs(C-C2))
 
-    if (L1>1E-5):        
+    if (L1 > 1E-5):
         print("Arrays don't match by: ", L1)
         print("A: \n", A)
         print("B: \n", B)
         print("C: \n", C)
         print("C2: \n", C2)
         return 1
-    
+
     print("Arrays match")
     return 0
 

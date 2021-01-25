@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-add_executable(matvec_omp_mpi matvec_omp_mpi.cpp matvec.c)
+add_executable(matvec_omp_mpi matvec_omp_mpi.cpp)
 target_link_libraries(matvec_strong argparser)
 
 # # Run test

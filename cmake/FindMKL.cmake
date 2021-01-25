@@ -126,7 +126,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8) # 64 bit
 	  endif ()
 	else ()
 	  execute_process(
-		COMMAND mpirun -V
+		COMMAND ${MPIEXEC} -V
 		OUTPUT_VARIABLE MPI_OUT
 		OUTPUT_STRIP_TRAILING_WHITESPACE)
 

@@ -58,33 +58,33 @@ int main(int argc, char **argv)
 	const int ITS = create_optional_cl_int("iterations", 1);
 	const int PRINT = create_optional_cl_int("print", 0);
 
-	envinfo _env;
+	envinfo env;
 
-	Initialize(&_env, &argc, &argv, ROWS, TS);
+	Initialize(&env, &argc, &argv, ROWS, TS);
 
-	printf("# Initialize in process: %d\n", _env.rank);;
+	printf("# Initialize in process: %d\n", env.rank);;
 
 	timer ttimer = create_timer("Total time");
 
 	// Allocate memory
-	const size_t rowsA = (_env.printerA == _env.rank ? _env.dim : _env.ldim);
-	double *A = (double *)malloc(rowsA * _env.dim * sizeof(double));
-	double *const lA = (_env.printerA == _env.rank ?
-	                    &A[_env.rank * _env.ldim * _env.dim] : A);
+	const size_t rowsA = (env.printerA == env.rank ? env.dim : env.ldim);
+	double *A = (double *)malloc(rowsA * env.dim * sizeof(double));
+	double *const lA = (env.printerA == env.rank ?
+	                    &A[env.rank * env.ldim * env.dim] : A);
 
-	const size_t colsBC = (ISMATVEC ? 1 : _env.dim);
-	const int nelsBC = _env.ldim * colsBC;
-	double *B = (double *)malloc(_env.dim * colsBC * sizeof(double));
-	double *const lB = &B[_env.rank * nelsBC];	// B is fully distributed
+	const size_t colsBC = (ISMATVEC ? 1 : env.dim);
+	const int nelsBC = env.ldim * colsBC;
+	double *B = (double *)malloc(env.dim * colsBC * sizeof(double));
+	double *const lB = &B[env.rank * nelsBC];	// B is fully distributed
 
-	const size_t rowsC = (_env.printerC == _env.rank ? _env.dim : _env.ldim);
+	const size_t rowsC = (env.printerC == env.rank ? env.dim : env.ldim);
 	double *C = (double *)malloc(rowsC * colsBC * sizeof(double));
-	double *const lC = (_env.printerC == _env.rank
-	                    ? &C[_env.rank * nelsBC] : C);
+	double *const lC = (env.printerC == env.rank
+	                    ? &C[env.rank * nelsBC] : C);
 
 	// Initialise arrays local portions
-	matrix_init(lA, _env.ldim, _env.dim, _env.first_local_thread);
-	matrix_init(lB, _env.ldim, colsBC, _env.first_local_thread);
+	matrix_init(lA, env.ldim, env.dim, env.first_local_thread);
+	matrix_init(lB, env.ldim, colsBC, env.first_local_thread);
 
 	//==========================================================================
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		matmul_omp(lA, B, lC, _env.ldim, _env.dim, colsBC);
+		matmul_omp(lA, B, lC, env.ldim, env.dim, colsBC);
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -107,9 +107,13 @@ int main(int argc, char **argv)
 
 	printf("# Finished algorithm...\n");
 
-	if (_env.rank == 0) {
+	if (env.rank == 0) {
+		create_reportable_int("worldsize", env.worldsize);
+		create_reportable_int("maxthreads", env.maxthreads);
+		create_reportable_int("cpu_count", env.cpu_count);
+
 		const double performance =
-			ITS * _env.dim * _env.dim * colsBC * 2000.0 / getNS_timer(&atimer);
+			ITS * env.dim * env.dim * colsBC * 2000.0 / getNS_timer(&atimer);
 
 		create_reportable_double("performance", performance);
 		report_args();
@@ -118,42 +122,42 @@ int main(int argc, char **argv)
 
 	if (PRINT) {
 		// Gather C to ITS printer
-		printf("# Call C Gather in process: %d\n", _env.rank);
-		if (_env.printerC == _env.rank) {
+		printf("# Call C Gather in process: %d\n", env.rank);
+		if (env.printerC == env.rank) {
 			MPI_Gather(MPI_IN_PLACE, nelsBC, MPI_DOUBLE,
 			           C, nelsBC, MPI_DOUBLE,
-			           _env.printerC, MPI_COMM_WORLD);
+			           env.printerC, MPI_COMM_WORLD);
 
-			printf("# Print C in process %d\n", _env.rank);
-			printmatrix(C, _env.dim, colsBC, PREFIX);
+			printf("# Print C in process %d\n", env.rank);
+			printmatrix(C, env.dim, colsBC, PREFIX);
 		} else {
 			MPI_Gather(C, nelsBC, MPI_DOUBLE,
 			           NULL, nelsBC, MPI_DOUBLE,
-			           _env.printerC, MPI_COMM_WORLD);
+			           env.printerC, MPI_COMM_WORLD);
 		}
 
 		// Gather A to its printer
-		printf("# Call A Gather in process: %d\n", _env.rank);
-		if (_env.printerA == _env.rank) {
-			MPI_Gather(MPI_IN_PLACE, _env.ldim * _env.dim, MPI_DOUBLE,
-			           A, _env.ldim * _env.dim, MPI_DOUBLE,
-			           _env.printerA, MPI_COMM_WORLD);
+		printf("# Call A Gather in process: %d\n", env.rank);
+		if (env.printerA == env.rank) {
+			MPI_Gather(MPI_IN_PLACE, env.ldim * env.dim, MPI_DOUBLE,
+			           A, env.ldim * env.dim, MPI_DOUBLE,
+			           env.printerA, MPI_COMM_WORLD);
 
-			printf("# Print A in process: %d\n",_env.rank);
-			printmatrix(A, _env.dim, _env.dim, PREFIX);
+			printf("# Print A in process: %d\n",env.rank);
+			printmatrix(A, env.dim, env.dim, PREFIX);
 		} else {
-			MPI_Gather(A, _env.ldim * _env.dim, MPI_DOUBLE,
-			           NULL, _env.ldim * _env.dim, MPI_DOUBLE,
-			           _env.printerA, MPI_COMM_WORLD);
+			MPI_Gather(A, env.ldim * env.dim, MPI_DOUBLE,
+			           NULL, env.ldim * env.dim, MPI_DOUBLE,
+			           env.printerA, MPI_COMM_WORLD);
 		}
 
-		if (_env.printerB == _env.rank) {
-			printf("# Print B in process: %d\n", _env.rank);
-			printmatrix(B, _env.dim, colsBC, PREFIX);
+		if (env.printerB == env.rank) {
+			printf("# Print B in process: %d\n", env.rank);
+			printmatrix(B, env.dim, colsBC, PREFIX);
 		}
 
 		MPI_Barrier(MPI_COMM_WORLD);
-		if (_env.rank) {
+		if (env.rank) {
 			printf("# Done printing results...\n");
 		}
 	}

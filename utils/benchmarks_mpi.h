@@ -32,9 +32,7 @@ extern "C" {
 		int printerA, printerB, printerC;
 	} envinfo;
 
-	void Initialize(envinfo * _env,
-	                int *argc, char ***argv,
-	                size_t dim, size_t TS)
+	void Initialize(envinfo * _env, int *argc, char ***argv, size_t dim, size_t TS)
 	{
 		MPI_Init(argc, argv);
 		MPI_Comm_rank(MPI_COMM_WORLD, &(_env->rank));

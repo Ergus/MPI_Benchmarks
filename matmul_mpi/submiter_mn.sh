@@ -36,7 +36,7 @@ nodes=(1 2 4 8)
 echo "nodes: ${nodes[*]}"
 
 for node in ${nodes[@]}; do
-	echo "Submitting nodes: ${node}\n" $node
+	echo "Submitting nodes: ${node}"
 
 	jobname="${name}_${node}"
 	filename="${resdir}/${jobname}"
@@ -47,5 +47,5 @@ for node in ${nodes[@]}; do
  		   --job-name=${jobname} \
  		   --output="${resdir}/%x_%2a_%j.out" \
  		   --error="${resdir}/%x_%2a_%j.err" \
- 		   ./submit_mn.sh -R ${ARGS[R]} -x "${command}"
+ 		   ./submit_mn.sh -R ${ARGS[R]} -x ${ARGS[x]}
 done

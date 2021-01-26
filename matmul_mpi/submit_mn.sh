@@ -15,7 +15,7 @@ printargs >&2
 dims=(1024 4096 8192)
 blocksizes=(64 128 256)
 
-REPEATS="${ARGS[R]}"
+REPEATS=${ARGS[R]}
 COMMAND="${ARGS[x]} ${ARGS[d]} ${ARGS[b]} 5"
 
 # Start run here printing run info header
@@ -33,15 +33,18 @@ echo "# ======================================"
 for dim in ${dims[@]}; do
 	for bs in ${blocksizes[@]}; do
 		if [ $((SLURM_JOB_NUM_NODES*bs<=dim)) = 1 ]; then
+			echo -e "# Starting combination dim: ${dim} bs: ${bs}"
+			echo "# ======================================"
 			for ((it=0; it<${REPEATS}; ++it)) {
 				echo "# Starting it: ${it} at: $(date)"
 				start=${SECONDS}
-				srun ${ARGS[x]} $dim ${ARGS[b]} 5
+				srun ${ARGS[x]} $dim $bs 5
 				end=${SECONDS}
 				echo "# Ending:  $(date)"
 				echo "# Elapsed: $((end-start))"
 				echo "# --------------------------------------"
 			}
+			echo ""
 		else
 			echo "# Jump combination nodes: $node, dim: $dim, bs: $bs"
 		fi

@@ -28,7 +28,7 @@ find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
 message(STATUS "Run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
 # Python interpreter for test
-find_package(Python REQUIRED COMPONENTS Interpreter NumPy)
+find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)

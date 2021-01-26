@@ -16,7 +16,6 @@ dims=(1024 4096 8192)
 blocksizes=(64 128 256)
 
 REPEATS=${ARGS[R]}
-COMMAND="${ARGS[x]} ${ARGS[d]} ${ARGS[b]} 5"
 
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
@@ -26,19 +25,19 @@ echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
 
 echo "# Repetitions: ${REPEATS}"
-echo "# Command: ${COMMAND}"
 env | grep NANOS6 | sed -e 's/^#*/# /'
 echo "# ======================================"
 
 for dim in ${dims[@]}; do
 	for bs in ${blocksizes[@]}; do
 		if [ $((SLURM_JOB_NUM_NODES*bs<=dim)) = 1 ]; then
-			echo -e "# Starting combination dim: ${dim} bs: ${bs}"
+			COMMAND="${ARGS[x]} $dim $bs 5"
+			echo -e "# Starting command: ${COMMAND}"
 			echo "# ======================================"
 			for ((it=0; it<${REPEATS}; ++it)) {
 				echo "# Starting it: ${it} at: $(date)"
 				start=${SECONDS}
-				srun ${ARGS[x]} $dim $bs 5
+				srun ${COMMAND}
 				end=${SECONDS}
 				echo "# Ending:  $(date)"
 				echo "# Elapsed: $((end-start))"

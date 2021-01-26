@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 
 	printf("# Initialize in process: %d\n", _env.rank);;
 
-	timer *ttimer = create_timer("Total time");
+	timer ttimer = create_timer("Total time");
 
 	// Allocate memory
 	const size_t rowsA = (_env.printerA == _env.rank ? _env.dim : _env.ldim);
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 
 	//==========================================================================
 
-	timer *atimer = create_timer("Algorithm time");
+	timer atimer = create_timer("Algorithm time");
 
 	// Gather B to all
 	MPI_Allgather(MPI_IN_PLACE, nelsBC, MPI_DOUBLE,
@@ -101,15 +101,15 @@ int main(int argc, char **argv)
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	stop_timer(atimer);
-	stop_timer(ttimer);
+	stop_timer(&atimer);
+	stop_timer(&ttimer);
 	// =========================================================================
 
 	printf("# Finished algorithm...\n");
 
 	if (_env.rank == 0) {
 		const double performance =
-			ITS * _env.dim * _env.dim * colsBC * 2000.0 / getNS_timer(atimer);
+			ITS * _env.dim * _env.dim * colsBC * 2000.0 / getNS_timer(&atimer);
 
 		create_reportable_double("performance", performance);
 		report_args();

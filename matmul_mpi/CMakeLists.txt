@@ -23,7 +23,7 @@ target_link_libraries(matmul_omp_mpi
   PUBLIC MPI::MPI_C
   argparser)
 add_test(NAME Test_matmul
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ./matmul_omp_mpi 128 1 1 1)
+  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./matmul_omp_mpi 128 8 3)
 
 add_executable(matvec_omp_mpi matmul_omp_mpi.c)
 target_compile_definitions(matvec_omp_mpi PUBLIC -DISMATVEC=1)
@@ -32,7 +32,7 @@ target_link_libraries(matvec_omp_mpi
   PUBLIC MPI::MPI_C
   argparser)
 add_test(NAME Test_matvec
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ./matvec_omp_mpi 128 1 1 1)
+  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./matvec_omp_mpi 128 16 1)
 
 # Run test
 
@@ -48,6 +48,5 @@ else ()
 endif () # PYTHONINTERP_FOUND
 
 # # Submitter scripts
-CONFIGURE_FILE(submiter_mn.sh submiter_mn.sh @ONLY@)
-CONFIGURE_FILE(submit_mn.sh submit_mn.sh @ONLY@)
-# CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)
+CONFIGURE_FILE(submiter_mn.sh submiter_mn.sh @ONLY)
+CONFIGURE_FILE(submit_mn.sh submit_mn.sh @ONLY)

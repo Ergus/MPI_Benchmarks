@@ -54,13 +54,13 @@ int main(int argc, char **argv)
 	init_args(argc, argv);
 
 	const int ROWS = create_cl_int("Rows");
-	const int LTHREADS = create_cl_int("lthreads");
+	const int TS = create_cl_int("TS");
 	const int ITS = create_optional_cl_int("iterations", 1);
 	const int PRINT = create_optional_cl_int("print", 0);
 
 	envinfo _env;
 
-	Initialize(&_env, &argc, &argv, ROWS, LTHREADS);
+	Initialize(&_env, &argc, &argv, ROWS, TS);
 
 	printf("# Initialize in process: %d\n", _env.rank);;
 

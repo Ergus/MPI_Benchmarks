@@ -32,11 +32,11 @@ echo "# ======================================"
 
 for dim in ${dims[@]}; do
 	for bs in ${blocksizes[@]}; do
-		if [ $((SLURM_JOB_NUM_NODES * bs <= dim)) = 1 ]; then
-			for ((it=0; it<{REPEATS}; ++it)) {
+		if [ $((SLURM_JOB_NUM_NODES*bs<=dim)) = 1 ]; then
+			for ((it=0; it<${REPEATS}; ++it)) {
 				echo "# Starting it: ${it} at: $(date)"
 				start=${SECONDS}
-				srun ${COMMAND}
+				srun ${ARGS[x]} $dim ${ARGS[b]} 5
 				end=${SECONDS}
 				echo "# Ending:  $(date)"
 				echo "# Elapsed: $((end-start))"

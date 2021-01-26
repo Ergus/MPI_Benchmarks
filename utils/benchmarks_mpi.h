@@ -25,44 +25,39 @@ extern "C" {
 #include "cmacros/macros.h"
 #include "mpi.h"
 
-
 	typedef struct {
 		int rank, worldsize;
-		size_t dim, tthreads, cpu_count;
-		size_t ldim, lthreads, first_local_thread;
+		size_t maxthreads, cpu_count;
+		size_t dim, ldim, first_local_thread;
 		int printerA, printerB, printerC;
 	} envinfo;
 
 	void Initialize(envinfo * _env,
 	                int *argc, char ***argv,
-	                size_t dim, size_t lthreads)
+	                size_t dim, size_t TS)
 	{
 		MPI_Init(argc, argv);
 		MPI_Comm_rank(MPI_COMM_WORLD, &(_env->rank));
 		MPI_Comm_size(MPI_COMM_WORLD, &(_env->worldsize));
 
+		omp_set_dynamic(0);	// Disable dynamic teams
+		omp_set_schedule(omp_sched_static, TS);
+		_env->maxthreads = omp_get_max_threads();
+
 		// test that the cpuset >= number of local threads
 		cpu_set_t mask;
 		const int ret = sched_getaffinity(0, sizeof(mask), &mask);
 		myassert(ret == 0);
-
 		_env->cpu_count = CPU_COUNT(&mask);
-		myassert(_env->cpu_count >= lthreads);
 
-		myassert(lthreads > 0);
 		myassert(dim >= (size_t)_env->worldsize);	// more rows than task size
 		modcheck(dim, _env->worldsize);	// we need to split exactly
 
 		_env->dim = dim;
-		_env->lthreads = lthreads;	// threads per process
-		_env->tthreads = lthreads * _env->worldsize;	// Total threads
-		_env->first_local_thread = _env->rank * lthreads;	// first local thread id
-		omp_set_dynamic(0);	// Disable dynamic teams
-		omp_set_num_threads(lthreads);	// parallel regions size
-
 		_env->ldim = dim / _env->worldsize;	// rows for local process
-		modcheck(_env->ldim, _env->lthreads);	// ldim % lthreads == 0
+		_env->first_local_thread = _env->rank * _env->maxthreads; // first local thread id
 
+		// Helper to print.
 		_env->printerA = 0;	// prints A
 		_env->printerB = imin(1, _env->worldsize - 1);	// prints B
 		_env->printerC = imin(2, _env->worldsize - 1);	// prints C

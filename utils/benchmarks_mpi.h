@@ -43,10 +43,8 @@ extern "C" {
 		_env->maxthreads = omp_get_max_threads();
 
 		// test that the cpuset >= number of local threads
-		cpu_set_t mask;
-		const int ret = sched_getaffinity(0, sizeof(mask), &mask);
-		myassert(ret == 0);
-		_env->cpu_count = CPU_COUNT(&mask);
+		_env->cpu_count = count_sched_cpus();
+		myassert(_env->cpu_count >= 0);
 
 		myassert(dim >= (size_t)_env->worldsize);	// more rows than task size
 		modcheck(dim, _env->worldsize);	// we need to split exactly

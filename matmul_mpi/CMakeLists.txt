@@ -36,11 +36,6 @@ add_test(NAME Test_matvec
 
 # Run test
 
-# # Submitter scripts
-# CONFIGURE_FILE(submit.sh submit.sh COPYONLY)
-# CONFIGURE_FILE(profile-matmul.sh profile-matmul.sh COPYONLY)
-# CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)
-
 # python test
 if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
   CONFIGURE_FILE(prove.py prove.py)
@@ -51,3 +46,8 @@ if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
 else ()
   MESSAGE("Python interpreter not found")
 endif () # PYTHONINTERP_FOUND
+
+# # Submitter scripts
+CONFIGURE_FILE(submiter_mn.sh submiter_mn.sh @ONLY@)
+CONFIGURE_FILE(submit_mn.sh submit_mn.sh @ONLY@)
+# CONFIGURE_FILE(gnuplot.plt gnuplot.plt COPYONLY)

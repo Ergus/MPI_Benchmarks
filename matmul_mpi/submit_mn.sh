@@ -15,6 +15,7 @@ printargs >&2
 dims=(1024 4096 8192)
 blocksizes=(64 128 256)
 
+REPEATS="${ARGS[R]}"
 COMMAND="${ARGS[x]} ${ARGS[d]} ${ARGS[b]} 5"
 
 # Start run here printing run info header
@@ -24,7 +25,7 @@ echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
 echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
 
-echo "# Repetitions: ${ARGS[R]}"
+echo "# Repetitions: ${REPEATS}"
 echo "# Command: ${COMMAND}"
 env | grep NANOS6 | sed -e 's/^#*/# /'
 echo "# ======================================"
@@ -32,8 +33,8 @@ echo "# ======================================"
 for dim in ${dims[@]}; do
 	for bs in ${blocksizes[@]}; do
 		if [ $((SLURM_JOB_NUM_NODES * bs <= dim)) = 1 ]; then
-			for ((it=0; it<${ARGS[R]}; ++it)) {
-				echo "# Starting it: ${it} at:  $(date)"
+			for ((it=0; it<{REPEATS}; ++it)) {
+				echo "# Starting it: ${it} at: $(date)"
 				start=${SECONDS}
 				srun ${COMMAND}
 				end=${SECONDS}
@@ -42,7 +43,7 @@ for dim in ${dims[@]}; do
 				echo "# --------------------------------------"
 			}
 		else
-			echo "# Jump combination nodes: $node, dim: $dim, bs: $bs \n"
+			echo "# Jump combination nodes: $node, dim: $dim, bs: $bs"
 		fi
 	done
 done

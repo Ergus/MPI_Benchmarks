@@ -62,15 +62,15 @@ int main(int argc, char **argv)
 
 	Initialize(&env, &argc, &argv, ROWS, TS);
 
-	printf("# Initialize in process: %d\n", env.rank);;
+	printf("# Initializing data in process: %d\n", env.rank);;
 
 	timer ttimer = create_timer("Total time");
 
 	// Allocate memory
 	const size_t rowsA = (env.printerA == env.rank ? env.dim : env.ldim);
 	double *A = (double *)malloc(rowsA * env.dim * sizeof(double));
-	double *const lA = (env.printerA == env.rank ?
-	                    &A[env.rank * env.ldim * env.dim] : A);
+	double *const lA = (env.printerA == env.rank
+	                    ? &A[env.rank * env.ldim * env.dim] : A);
 
 	const size_t colsBC = (ISMATVEC ? 1 : env.dim);
 	const int nelsBC = env.ldim * colsBC;
@@ -85,8 +85,9 @@ int main(int argc, char **argv)
 	// Initialise arrays local portions
 	matrix_init(lA, env.ldim, env.dim, env.first_local_thread);
 	matrix_init(lB, env.ldim, colsBC, env.first_local_thread);
+	MPI_Barrier(MPI_COMM_WORLD);
 
-	//==========================================================================
+	printf("# Starting algorithm in process: %d\n", env.rank);
 
 	timer atimer = create_timer("Algorithm time");
 
@@ -102,15 +103,14 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	stop_timer(&atimer);
-	stop_timer(&ttimer);
-	// =========================================================================
 
-	printf("# Finished algorithm...\n");
+	printf("# Finished algorithm in process: %d\n", env.rank);
+	stop_timer(&ttimer);
 
 	if (env.rank == 0) {
 		create_reportable_int("worldsize", env.worldsize);
-		create_reportable_int("maxthreads", env.maxthreads);
 		create_reportable_int("cpu_count", env.cpu_count);
+		create_reportable_int("maxthreads", env.maxthreads);
 
 		const double performance =
 			ITS * env.dim * env.dim * colsBC * 2000.0 / getNS_timer(&atimer);
@@ -118,7 +118,6 @@ int main(int argc, char **argv)
 		create_reportable_double("performance", performance);
 		report_args();
 	}
-
 
 	if (PRINT) {
 		// Gather C to ITS printer
@@ -165,6 +164,7 @@ int main(int argc, char **argv)
 	free(C);
 	free(B);
 	free(A);
+	free_args();
 
 	Finalize();
 	return 0;

@@ -12,8 +12,8 @@ add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int
 parse_args "$@"
 printargs >&2
 
-dims=(1024 4096 8192)
-blocksizes=(64 128 256)
+dims=(16384 32768)
+blocksizes=(2 4 8 16 32 64 128)
 
 REPEATS=${ARGS[R]}
 

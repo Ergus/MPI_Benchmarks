@@ -27,3 +27,7 @@ target_link_libraries(type_mpi
 add_test(NAME Test_type
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./type_mpi 128)
 
+
+# install (copy) scripts
+configure_file(trace.sh trace.sh @ONLY)
+configure_file(extrae_template.xml extrae.xml @ONLY)

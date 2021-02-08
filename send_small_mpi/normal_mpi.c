@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
 
 	int req_idx = 0;
 
+	// Send and receive
 	for (size_t i = 0; i < fullsize; ++i) {
 
 		int owner = i % env.worldsize;

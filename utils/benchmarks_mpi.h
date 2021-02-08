@@ -22,6 +22,7 @@
 extern "C" {
 #endif
 
+#include <assert.h>
 #include "cmacros/macros.h"
 #include "mpi.h"
 
@@ -34,7 +35,10 @@ extern "C" {
 
 	void Initialize(envinfo * _env, int *argc, char ***argv, size_t dim, size_t TS)
 	{
-		MPI_Init(argc, argv);
+		int provided = 0;
+		MPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided);
+		assert (provided == MPI_THREAD_MULTIPLE);
+
 		MPI_Comm_rank(MPI_COMM_WORLD, &(_env->rank));
 		MPI_Comm_size(MPI_COMM_WORLD, &(_env->worldsize));
 

@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 		displs[i] = malloc( (frac + (i < rest)) * sizeof (int) );
 	}
 
-	// Initialize
+	// Initialize auxiliars
 	for (size_t i = 0; i < fullsize; ++i) {
 		size_t owner = i % env.worldsize;
 		size_t idx = counts[owner]++;
@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
 			MPI_Irecv(array, 1, sendtype, i, i, MPI_COMM_WORLD, &reqs[req_idx++]);
 		}
 
+		// The type is deleted when all the pending operations finish.
 		MPI_Type_free(&sendtype);
 	}
 

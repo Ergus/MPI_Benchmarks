@@ -13,17 +13,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+find_package(Extrae MODULE COMPONENTS mpitrace)
+
+if (Extrae_FOUND)
+  message (STATUS "Using Extrae")
+  include_directories(${EXTRAE_INCLUDES})
+endif ()
+
 add_executable(normal_mpi normal_mpi.c)
 target_link_libraries(normal_mpi
   PUBLIC MPI::MPI_C
-  argparser)
+  ${EXTRAE_LIBRARIES} argparser)
+
 add_test(NAME Test_normal
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./normal_mpi 128)
 
 add_executable(type_mpi type_mpi.c)
 target_link_libraries(type_mpi
   PUBLIC MPI::MPI_C
+  ${EXTRAE_LIBRARIES}
   argparser)
+
 add_test(NAME Test_type
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./type_mpi 128)
 

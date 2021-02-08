@@ -25,7 +25,7 @@
 #include "ArgParserC/argparser.h"
 
 #include "benchmarks_mpi.h"
-
+#include "extrae_user_events.h"
 
 int main(int argc, char *argv[])
 {
@@ -38,6 +38,15 @@ int main(int argc, char *argv[])
 
 	Initialize(&env, &argc, &argv, fullsize, 1);
 
+	// Add some instrumentation for extrae.
+	extrae_type_t type = 50000007;
+	int nvalues = 2;
+	extrae_value_t values[2] = {0, 1};
+	char * description_values[2] = {"End", "MPI_Type_indexed"};
+
+	Extrae_define_event_type (&type, "MPI_Type_indexed", &nvalues, values, description_values);
+
+	// Start the code.
 	double *array = (double *) malloc(fullsize * sizeof(double));
 
 	size_t counter = 0; // number of elements I own
@@ -82,9 +91,13 @@ int main(int argc, char *argv[])
 
 	// Send and receive
 	for (size_t i = 0; i < env.worldsize; ++i) {
+		Extrae_event(type, 1);
+
 		MPI_Datatype sendtype;
 		MPI_Type_indexed(3, lengths[env.rank], displs[env.rank], MPI_INT, &sendtype);
 		MPI_Type_commit(&sendtype);
+
+		Extrae_event(type, 0);
 
 		if (i == env.rank) {  // Send to all
 			for (size_t j = 0; j < env.worldsize; ++j) {

@@ -19,11 +19,11 @@
 #define _GNU_SOURCE
 #endif
 
-#include "benchmarks_mpi.h"
+#include <stdio.h>
 
 #include "ArgParserC/argparser.h"
 
-#include <stdio.h>
+#include "benchmarks_mpi.h"
 
 #if ISMATVEC
 #define PREFIX "matvec"

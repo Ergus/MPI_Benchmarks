@@ -87,6 +87,7 @@ int main(int argc, char **argv)
 	matrix_init(lB, env.ldim, colsBC, env.first_local_thread);
 	MPI_Barrier(MPI_COMM_WORLD);
 
+	// ===========================================
 	printf("# Starting algorithm in process: %d\n", env.rank);
 
 	timer atimer = create_timer("Algorithm time");
@@ -103,6 +104,7 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	stop_timer(&atimer);
+	// ===========================================
 
 	printf("# Finished algorithm in process: %d\n", env.rank);
 	stop_timer(&ttimer);

@@ -27,5 +27,9 @@ add_test(NAME Test_jacobi
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)
 
 # # Submitter scripts
-CONFIGURE_FILE(submiter_mn.sh submiter_mn.sh @ONLY)
-CONFIGURE_FILE(submit_mn.sh submit_mn.sh @ONLY)
+CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
+CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
+
+configure_file("${PROJECT_SOURCE_DIR}/utils/process.py" process.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_paraver_trace.py COPYONLY)

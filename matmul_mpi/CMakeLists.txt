@@ -37,6 +37,8 @@ add_test(NAME Test_matvec
 # Run test
 
 # python test
+configure_file(prove.py prove.py COPYONLY)
+
 if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
   CONFIGURE_FILE(prove.py prove.py)
   ADD_TEST(NAME Test_matmul_results
@@ -47,6 +49,11 @@ else ()
   MESSAGE("Python interpreter not found")
 endif () # PYTHONINTERP_FOUND
 
-# # Submitter scripts
-CONFIGURE_FILE(submiter_mn.sh submiter_mn.sh @ONLY)
-CONFIGURE_FILE(submit_mn.sh submit_mn.sh @ONLY)
+# Submitter scripts
+CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
+CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
+
+configure_file("${PROJECT_SOURCE_DIR}/utils/process.py" process.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_paraver_trace.py COPYONLY)
+

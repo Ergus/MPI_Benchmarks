@@ -22,21 +22,9 @@ target_link_libraries(jacobi_omp_mpi
   PUBLIC OpenMP::OpenMP_C
   PUBLIC MPI::MPI_C
   argparser)
+
 add_test(NAME Test_jacobi
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)
-
-# Run test
-
-# python test
-# if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-#   CONFIGURE_FILE(prove.py prove.py)
-#   ADD_TEST(NAME Test_matmul_results
-#     COMMAND ${Python_EXECUTABLE} prove.py matmul_A.mat matmul_B.mat matmul_C.mat)
-#   ADD_TEST(NAME Test_matvec_results
-#     COMMAND ${Python_EXECUTABLE} prove.py matvec_A.mat matvec_B.mat matvec_C.mat)
-# else ()
-#   MESSAGE("Python interpreter not found")
-# endif () # PYTHONINTERP_FOUND
 
 # # Submitter scripts
 CONFIGURE_FILE(submiter_mn.sh submiter_mn.sh @ONLY)

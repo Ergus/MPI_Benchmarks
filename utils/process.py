@@ -22,27 +22,44 @@ from statistics import mean, stdev
 
 import json
 
-re_ignore = re.compile('# [^-=]+')    # Comments like # Anything
+re_ignore = re.compile('(# [^-=]+)|(^performance)')    # Comments like # Anything
 re_pair = re.compile('(?P<key>[\w,\s]+): (?P<value>\d+(?P<float>\.\d+(e\+\d+)?)?)') # KEY: number
 re_next = re.compile('# -+')            # Divisor like # ---------
 re_report = re.compile('# =+')          # Divisor like # =========
 re_value = re.compile('((\w+)|performance$ time)$')
 
-results = {}
+results = []
 
 def process_group(a_dict):
     """Process group of executions with same parameters."""
+
+    copydic = {}
     for key in a_dict:
         if isinstance(a_dict[key], list):
-            m = mean(a_dict[key])
-            s = stdev(a_dict[key])
-            a_dict[key] = (m, s)
+            if "executions" in copydic:
+                assert copydic["executions"] == len(a_dict[key])
+            else:
+                count = len(a_dict[key])
+                assert count > 0
+                copydic["executions"] = count
 
-    print(json.dumps(a_dict))
+            if count == 1:  # single element.
+                m = a_dict[key][0]
+                s = 0;
+            else:           # Use mean and stdev when multiple elements
+                m = mean(a_dict[key])
+                s = stdev(a_dict[key])
 
+            copydic[key] = m
+            copydic[key+" stdev"] = s
+
+        else:
+            copydic[key] = a_dict[key]
+
+    results.append(copydic)
 
 def process_file(input_file):
-    '''Process the files and print the data in json format.'''
+    """Process the files and print the data in json format."""
     line_dict = {}
     count = 0
 
@@ -64,6 +81,9 @@ def process_file(input_file):
             else:                  # it is a key so will be used as a key/info
                 ivalue = int(match.groupdict()['value'])
                 if key in line_dict:
+                    if line_dict[key] != ivalue:
+                        print(line)
+                        print(key, line_dict[key], ivalue)
                     assert line_dict[key] == ivalue
                     assert count > 0
                 else:
@@ -71,12 +91,12 @@ def process_file(input_file):
 
             continue
 
-        # --------------
+        # -------------- repetition
         if re_next.match(line):
             count = count + 1
             continue
 
-        # ==============
+        # ============== end group
         if re_report.match(line):
             if count > 0:
                 process_group(line_dict)
@@ -98,5 +118,5 @@ if __name__ == "__main__":
         except IOError:
             print("File not accessible")
     else:
-        print ("Needs an input file")
+        print(json.dumps(results, indent=1))
 

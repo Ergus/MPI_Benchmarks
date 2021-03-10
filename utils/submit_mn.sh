@@ -21,6 +21,7 @@ trap 'job_finish_hook' USR1
 source @PROJECT_BINARY_DIR@/argparse.sh
 add_argument -a x -l exe -h "Executable file" -t file
 add_argument -a R -l repeats -h "Repetitions per program default[1]" -t int
+add_argument -a W -l weak -h "Namespace propagation enabled" -t int
 
 parse_args "$@"
 printargs >&2
@@ -30,12 +31,19 @@ blocksizes=(8 16 32 64 128 256 512)
 
 REPEATS=${ARGS[R]}
 
+# Enable/disable weak scaling (parameter -W)
+[ ${ARGS[W]} = 1 ] && reps=$(( SLURM_JOB_NUM_NODES * 5 )) || reps=5
+
+
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
 echo "# Nodes: ${SLURM_JOB_NUM_NODES} Tasks_per_Node: ${SLURM_NTASKS_PER_NODE} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
 echo "# Nodes_List: ${SLURM_JOB_NODELIST}"
 echo "# QOS: ${SLURM_JOB_QOS}"
 echo "# Account: ${SLURM_JOB_ACCOUNT} Submitter_host: ${SLURM_SUBMIT_HOST} Running_Host: ${SLURMD_NODENAME}"
+
+# Print command line arguments
+printargs "# "
 
 echo "# Repetitions: ${REPEATS}"
 env | grep NANOS6 | sed -e 's/^#*/# /'
@@ -44,7 +52,7 @@ echo "# ======================================"
 for dim in ${dims[@]}; do
 	for bs in ${blocksizes[@]}; do
 		if [ $((SLURM_JOB_NUM_NODES*bs<=dim)) = 1 ]; then
-			COMMAND="${ARGS[x]} $dim $bs 5"
+			COMMAND="${ARGS[x]} $dim $bs $reps"
 			echo -e "# Starting command: ${COMMAND}"
 			echo "# ======================================"
 			for ((it=0; it<${REPEATS}; ++it)) {

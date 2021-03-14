@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 
 	printf("# Initializing data in process: %d\n", env.rank);;
 
-	timer ttimer = create_timer("Total time");
+	timer ttimer = create_timer("Total_time");
 
 	// Allocate memory
 	const size_t rowsA = (env.printerA == env.rank ? env.dim : env.ldim);
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 	// ===========================================
 	printf("# Starting algorithm in process: %d\n", env.rank);
 
-	timer atimer = create_timer("Algorithm time");
+	timer atimer = create_timer("Algorithm_time");
 
 	// Gather B to all
 	MPI_Allgather(MPI_IN_PLACE, env.ldim, MPI_DOUBLE,
@@ -169,14 +169,6 @@ int main(int argc, char **argv)
 
 		MPI_Allgather(x2, env.ldim, MPI_DOUBLE,
 		              x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
-
-		// Repeat this to match the ompss parameters.
-		jacobi_omp(lA, B, x1, x2, &env);
-
-		// Gather B to all
-		MPI_Allgather(x2, env.ldim, MPI_DOUBLE,
-		              x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
-
 	}
 
 	stop_timer(&atimer);
@@ -189,11 +181,6 @@ int main(int argc, char **argv)
 		create_reportable_int("worldsize", env.worldsize);
 		create_reportable_int("cpu_count", env.cpu_count);
 		create_reportable_int("maxthreads", env.maxthreads);
-
-		const double performance =
-			ITS * env.dim * env.dim * 2000.0 / getNS_timer(&atimer);
-
-		create_reportable_double("performance", performance);
 		report_args();
 	}
 

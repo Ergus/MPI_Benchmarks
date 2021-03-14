@@ -187,7 +187,7 @@ int main(int argc, char **argv)
 
 	if (env.rank == 0) {
 
-		timer ttimer = create_timer("Total time");
+		timer ttimer = create_timer("Total_time");
 		//======= Allocate matrices ===============
 		matrix = malloc(dim2);
 		assert(matrix != NULL);
@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 		MPI_Wait(&req, MPI_STATUS_IGNORE);
 		// ===========================================
 		printf("# Starting algorithm in process: %d\n", env.rank);
-		timer atimer = create_timer("Algorithm time");
+		timer atimer = create_timer("Algorithm_time");
 		cholesky(nblocks, BSIZE, env.rank, env.worldsize, matrix);
 		stop_timer(&atimer);
 		// ===========================================
@@ -222,8 +222,6 @@ int main(int argc, char **argv)
 
 		stop_timer(&ttimer);
 
-		const double performance =
-			env.dim * env.dim * env.dim * 3000.0 / getNS_timer(&atimer);
 
 		//======== Check if set =====================
 		if (CHECK) {
@@ -241,6 +239,8 @@ int main(int argc, char **argv)
 			free(original);
 		}
 
+		report_args();
+
 	} else {
 		matrix = malloc(lelements * sizeof(double));
 		assert(matrix);
@@ -255,5 +255,6 @@ int main(int argc, char **argv)
 
 	free(matrix);
 	MPI_Finalize();
+	free_args();
 	fprintf(stderr, "# Process %d Finalized\n", env.rank);
 }

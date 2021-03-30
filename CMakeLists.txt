@@ -17,19 +17,29 @@
 # 3.12.4 required to use FindPython
 cmake_minimum_required(VERSION 3.12.4)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 project(mpi_benchmarks)
+
+option(WITH_ASAN "Build tests with address sanitizer" false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-add_definitions(-D_GNU_SOURCE)
+add_compile_definitions(_GNU_SOURCE)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+# Enable address sanitizer
+if (WITH_ASAN)
+  message("Using ASAN")
+  add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
+
+  set (CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+endif ()
+
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)
-message(STATUS "Run: ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} EXECUTABLE ${MPIEXEC_POSTFLAGS} ARGS")
-# Python interpreter for test
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 # add the subdirectories here

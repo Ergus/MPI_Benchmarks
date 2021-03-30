@@ -17,7 +17,6 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fs
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 add_executable(jacobi_omp_mpi jacobi_omp_mpi.c)
-target_compile_definitions(jacobi_omp_mpi PUBLIC -DISMATVEC=0)
 target_link_libraries(jacobi_omp_mpi
   PUBLIC OpenMP::OpenMP_C
   PUBLIC MPI::MPI_C
@@ -26,10 +25,19 @@ target_link_libraries(jacobi_omp_mpi
 add_test(NAME Test_jacobi
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)
 
-# # Submitter scripts
-CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
-CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+# submiter
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_jacobi_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_jacobi_dim.sh @ONLY)
+
+# Submit
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
+
+# Extrae
+configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
 
-configure_file("${PROJECT_SOURCE_DIR}/utils/process.py" process.py COPYONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_paraver_trace.py COPYONLY)
+# Process
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process_dim.py COPYONLY)
+

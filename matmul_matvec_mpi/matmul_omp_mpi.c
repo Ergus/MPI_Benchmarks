@@ -20,16 +20,11 @@
 #endif
 
 #include <stdio.h>
+#include <libgen.h>
 
 #include "ArgParserC/argparser.h"
 
 #include "benchmarks_mpi.h"
-
-#if ISMATVEC
-#define PREFIX "matvec"
-#else
-#define PREFIX "matmul"
-#endif
 
 void matmul_omp(const double *A, const double *B, double * const C,
                 size_t lrowsA, size_t dim, size_t colsBC)
@@ -53,6 +48,7 @@ int main(int argc, char **argv)
 {
 	init_args(argc, argv);
 
+	const char *PREFIX = basename(argv[0]);
 	const int ROWS = create_cl_int("Rows");
 	const int TS = create_cl_int("Tasksize");
 	const int ITS = create_optional_cl_int("Iterations", 1);

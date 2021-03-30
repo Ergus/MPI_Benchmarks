@@ -16,44 +16,47 @@
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
-add_executable(matmul_omp_mpi matmul_omp_mpi.c)
-target_compile_definitions(matmul_omp_mpi PUBLIC -DISMATVEC=0)
-target_link_libraries(matmul_omp_mpi
-  PUBLIC OpenMP::OpenMP_C
-  PUBLIC MPI::MPI_C
-  argparser)
-add_test(NAME Test_matmul
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./matmul_omp_mpi 128 8 3)
-
-add_executable(matvec_omp_mpi matmul_omp_mpi.c)
-target_compile_definitions(matvec_omp_mpi PUBLIC -DISMATVEC=1)
-target_link_libraries(matvec_omp_mpi
-  PUBLIC OpenMP::OpenMP_C
-  PUBLIC MPI::MPI_C
-  argparser)
-add_test(NAME Test_matvec
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./matvec_omp_mpi 128 16 1)
-
-# Run test
-
-# python test
-configure_file(prove.py prove.py COPYONLY)
-
 if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-  CONFIGURE_FILE(prove.py prove.py)
-  ADD_TEST(NAME Test_matmul_results
-    COMMAND ${Python_EXECUTABLE} prove.py matmul_A.mat matmul_B.mat matmul_C.mat)
-  ADD_TEST(NAME Test_matvec_results
-    COMMAND ${Python_EXECUTABLE} prove.py matvec_A.mat matvec_B.mat matvec_C.mat)
+  configure_file(validate.py validate.py @ONLY)
 else ()
-  MESSAGE("Python interpreter not found")
+  message("Python interpreter not found")
 endif () # PYTHONINTERP_FOUND
 
-# Submitter scripts
-CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
-CONFIGURE_FILE("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+
+set (TESTLIST matmul matvec)
+foreach (ISMATVEC 0;1)
+  list(GET TESTLIST ${ISMATVEC} TEST)
+
+  set(executable "${TEST}_omp_mpi")
+  add_executable(${executable} matmul_omp_mpi.c)
+  target_compile_definitions(${executable} PUBLIC -DISMATVEC=${ISMATVEC})
+  target_link_libraries(${executable}
+    PUBLIC OpenMP::OpenMP_C
+    PUBLIC MPI::MPI_C
+    argparser)
+
+  add_test(NAME Test_${executable}
+    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 1024 16 1 1)
+
+  # Add result test
+  if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
+    add_test(NAME Test_${executable}_results
+      COMMAND ${Python_EXECUTABLE} validate.py ${executable}_{A,B,C}.mat)
+  endif () # Python_FOUND
+
+  configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
+  configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
+
+endforeach ()
+
+# Submit
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
+
+# Extrae
+configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
 
-configure_file("${PROJECT_SOURCE_DIR}/utils/process.py" process.py COPYONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/create_trace.py" create_paraver_trace.py COPYONLY)
-
+# Process
+# configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
+# configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process_dim.py COPYONLY)

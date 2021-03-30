@@ -25,12 +25,6 @@
 
 #include "benchmarks_mpi.h"
 
-#if ISMATVEC
-#define PREFIX "matvec"
-#else
-#define PREFIX "matmul"
-#endif
-
 void init_AB(double *A, double *B, const envinfo *env)
 {
 	const size_t first_row = env->ldim * env->rank;
@@ -123,6 +117,7 @@ int main(int argc, char **argv)
 {
 	init_args(argc, argv);
 
+	const char *PREFIX = basename(argv[0]);
 	const int ROWS = create_cl_int("Rows");
 	const int TS = create_cl_int("Tasksize");
 	const int ITS = create_optional_cl_int("Iterations", 1);

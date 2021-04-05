@@ -25,6 +25,9 @@ target_link_libraries(jacobi_omp_mpi
 add_test(NAME Test_jacobi
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)
 
+# Set this for the substitutions in configure_file
+set(TEST "jacobi")
+
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_jacobi_dim.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_jacobi_dim.sh @ONLY)
@@ -38,6 +41,6 @@ configure_file("${PROJECT_SOURCE_DIR}/utils/trace.sh" trace.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/extrae_template.xml" extrae.xml @ONLY)
 
 # Process
-configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process_dim.py COPYONLY)
+# configure_file("${PROJECT_SOURCE_DIR}/utils/process_mn.py" process_mn.py COPYONLY)
+# configure_file("${PROJECT_SOURCE_DIR}/utils/process_dim.py" process_dim.py COPYONLY)
 

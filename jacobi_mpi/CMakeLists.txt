@@ -17,10 +17,7 @@ set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fs
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
 add_executable(jacobi_omp_mpi jacobi_omp_mpi.c)
-target_link_libraries(jacobi_omp_mpi
-  PUBLIC OpenMP::OpenMP_C
-  PUBLIC MPI::MPI_C
-  argparser)
+target_link_libraries(jacobi_omp_mpi argparser)
 
 add_test(NAME Test_jacobi
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)

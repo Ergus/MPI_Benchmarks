@@ -22,10 +22,7 @@ add_test(NAME Test_normal
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./normal_mpi 128)
 
 add_executable(type_mpi type_mpi.c)
-target_link_libraries(type_mpi
-  PUBLIC MPI::MPI_C
-  ${EXTRAE_LIBRARIES}
-  argparser)
+target_link_libraries(type_mpi argparser)
 
 add_test(NAME Test_type
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./type_mpi 128)

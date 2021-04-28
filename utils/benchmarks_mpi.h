@@ -42,7 +42,7 @@ typedef extrae_type_t inst_type_t;
 typedef extrae_value_t inst_value_t;
 #define inst_define_event_type(type,name,nvalues,values,descriptions) \
 	Extrae_define_event_type(type,name,nvalues,values,descriptions)
-#define instrument_event(evt, val) Extrae_event(evt, val)
+#define inst_event(evt, val) Extrae_event(evt, val)
 #else
 typedef size_t inst_type_t;
 typedef size_t inst_value_t;

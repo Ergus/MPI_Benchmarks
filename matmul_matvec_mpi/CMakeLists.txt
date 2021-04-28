@@ -30,10 +30,7 @@ foreach (ISMATVEC 0;1)
   set(executable "${TEST}_omp_mpi")
   add_executable(${executable} matmul_omp_mpi.c)
   target_compile_definitions(${executable} PUBLIC -DISMATVEC=${ISMATVEC})
-  target_link_libraries(${executable}
-    PUBLIC OpenMP::OpenMP_C
-    PUBLIC MPI::MPI_C
-    argparser)
+  target_link_libraries(${executable} argparser)
 
   add_test(NAME Test_${executable}
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 1024 16 1 1)

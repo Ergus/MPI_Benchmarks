@@ -48,11 +48,16 @@ if (WITH_EXTRAE)
     message (STATUS "Using Extrae")
     add_compile_definitions(__WITH_EXTRAE=1)
     include_directories(${EXTRAE_INCLUDES})
+    link_libraries(${EXTRAE_LIBRARIES})
   endif ()
 endif()
 
 find_package(MPI REQUIRED)
+link_libraries(MPI::MPI_C)
+
 find_package(OpenMP REQUIRED)
+link_libraries(OpenMP::OpenMP_C)
+
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 # add the subdirectories here

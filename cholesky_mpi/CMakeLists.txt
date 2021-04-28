@@ -29,8 +29,4 @@ include_directories(${MKL_INCLUDE_DIR})
 
 add_executable(cholesky cholesky.c util.c)
 target_link_options(cholesky PUBLIC ${BLAS_LINKER_FLAGS})
-target_link_libraries(cholesky
-  PUBLIC OpenMP::OpenMP_C
-  PUBLIC MPI::MPI_C
-  ${BLAS_LIBRARIES}
-  argparser)
+target_link_libraries(cholesky ${BLAS_LIBRARIES} argparser)

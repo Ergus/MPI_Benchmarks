@@ -28,12 +28,13 @@ if (EXTRAE_HOME)
     NAMES ${Extrae_FIND_COMPONENTS}
     HINTS ENV EXTRAE_HOME
     PATHS ENV LD_LIBRARY_PATH
+    REQUIRED
     DOC "Extrae library"
     PATH_SUFFIXES lib lib64 lib32
     NO_DEFAULT_PATH)
 
   find_package_handle_standard_args (Extrae
-    REQUIRED_VARS EXTRAE_INCLUDE EXTRAE_LIBRARY)
+    REQUIRED_VARS EXTRAE_LIBRARY EXTRAE_INCLUDE)
 
 endif ()
 

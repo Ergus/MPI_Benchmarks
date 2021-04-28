@@ -42,10 +42,8 @@ endif ()
 
 # Enable Extrae
 if (WITH_EXTRAE)
-  find_package(Extrae REQUIRED COMPONENTS mpitrace)
-
+  find_package(Extrae REQUIRED COMPONENTS ompitrace)
   if (Extrae_FOUND)
-    message (STATUS "Using Extrae")
     add_compile_definitions(__WITH_EXTRAE=1)
     include_directories(${EXTRAE_INCLUDES})
     link_libraries(${EXTRAE_LIBRARIES})
@@ -55,7 +53,7 @@ endif()
 find_package(MPI REQUIRED)
 link_libraries(MPI::MPI_C)
 
-find_package(OpenMP REQUIRED)
+find_package(OpenMP REQUIRED COMPONENTS C)
 link_libraries(OpenMP::OpenMP_C)
 
 find_package(Python MODULE COMPONENTS Interpreter NumPy)

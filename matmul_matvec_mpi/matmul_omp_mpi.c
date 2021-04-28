@@ -15,15 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <stdio.h>
-#include <libgen.h>
-
-#include "ArgParserC/argparser.h"
-
 #include "benchmarks_mpi.h"
 
 void matmul_omp(const double *A, const double *B, double * const C,

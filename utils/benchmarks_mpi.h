@@ -18,17 +18,41 @@
 #ifndef BENCHMARKS_MPI
 #define BENCHMARKS_MPI
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdio.h>
+#include <libgen.h>  // basename
 #include <assert.h>
-#include "cmacros/macros.h"
 #include "mpi.h"
+
+#include "cmacros/macros.h"
+#include "ArgParserC/argparser.h"
+
+// Define extrae if macro is set.
+#if __WITH_EXTRAE
+#include "extrae_user_events.h"
+
+typedef extrae_type_t inst_type_t;
+typedef extrae_value_t inst_value_t;
+#define inst_define_event_type(type,name,nvalues,values,descriptions) \
+	Extrae_define_event_type(type,name,nvalues,values,descriptions)
+#define instrument_event(evt, val) Extrae_event(evt, val)
+#else
+typedef size_t inst_type_t;
+typedef size_t inst_value_t;
+#define inst_define_event_type(type,name,nvalues,values,descriptions)
+#define inst_event(evt, val)
+#endif
 
 	typedef struct {
 		int rank, worldsize;
-		size_t maxthreads, cpu_count;
+		size_t maxthreads, cpu_count, TS;
 		size_t dim, ldim, first_local_thread;
 		int printerA, printerB, printerC;
 	} envinfo;
@@ -49,6 +73,9 @@ extern "C" {
 		// test that the cpuset >= number of local threads
 		_env->cpu_count = count_sched_cpus();
 		myassert(_env->cpu_count >= 0);
+
+		_env->TS = TS;
+		myassert(_env->TS > 0);
 
 		myassert(dim >= (size_t)_env->worldsize);	// more rows than task size
 		modcheck(dim, _env->worldsize);	// we need to split exactly

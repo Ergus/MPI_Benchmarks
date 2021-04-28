@@ -14,18 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <stdio.h>
-
-#include "mpi.h"
-
-#include "ArgParserC/argparser.h"
 
 #include "benchmarks_mpi.h"
-#include "extrae_user_events.h"
 
 int main(int argc, char *argv[])
 {

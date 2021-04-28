@@ -22,6 +22,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 project(mpi_benchmarks)
 
 option(WITH_ASAN "Build tests with address sanitizer" false)
+option(WITH_EXTRAE "Build with Extrae traces support" false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,10 +34,22 @@ add_compile_definitions(_GNU_SOURCE)
 if (WITH_ASAN)
   message("Using ASAN")
   add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
+  add_compile_definitions(__WITH_ASAN=1)
 
   set (CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif ()
+
+# Enable Extrae
+if (WITH_EXTRAE)
+  find_package(Extrae REQUIRED COMPONENTS mpitrace)
+
+  if (Extrae_FOUND)
+    message (STATUS "Using Extrae")
+    add_compile_definitions(__WITH_EXTRAE=1)
+    include_directories(${EXTRAE_INCLUDES})
+  endif ()
+endif()
 
 find_package(MPI REQUIRED)
 find_package(OpenMP REQUIRED)

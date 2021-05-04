@@ -30,7 +30,7 @@ $@
 unset LD_PRELOAD
 
 # Create the mpits
-if  [ -z ${MPI_LOCALRANKID} ] || [ $MPI_LOCALRANKID -eq 0 ]; then
-	echo "Creating mpits file manually"
-	ls ${PWD}/set-0/*.mpit | sed 's/$/ named/' > TRACE.mpits
-fi
+# if  [ -z ${MPI_LOCALRANKID} ] || [ $MPI_LOCALRANKID -eq 0 ]; then
+# 	echo "Creating mpits file manually"
+# 	ls ${PWD}/set-0/*.mpit | sed 's/$/ named/' > TRACE.mpits
+# fi

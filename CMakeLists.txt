@@ -67,8 +67,9 @@ enable_testing()
 configure_file(${PROJECT_SOURCE_DIR}/utils/ArgParserBash/argparse.sh
   ${PROJECT_BINARY_DIR}/argparse.sh COPYONLY)
 
+# Lists of include files
 file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_CURRENT_LIST_DIR}/*_mpi)
-
+# Include all subdirectories with _ompss2 suffix.
 foreach (child ${children})
   message ("-- Adding subdirectory?: ${child}")
   if ((IS_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/${child})

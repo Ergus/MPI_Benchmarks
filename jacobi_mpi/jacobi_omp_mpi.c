@@ -81,26 +81,20 @@ void jacobi_modify(double *A, double *B, const envinfo *env)
 	}
 }
 
+// A * xin + B = xout
 void jacobi_omp(const double *A, const double *B,
                 double *xin, double *xout, const envinfo *env
 ) {
 	const size_t first_row = env->ldim * env->rank;
 
-	#pragma omp parallel
-	{
-		inst_event(9910002, 1);
+	#pragma omp parallel for
+	for (size_t i = 0; i < env->ldim; ++i) {
+		inst_event(9910002, env->dim);
 
-		#pragma omp for schedule(static,env->TS)
-		for (size_t i = 0; i < env->ldim; ++i) {
+		xout[i] = B[first_row + i];
 
-
-			size_t fi = first_row + i;
-			xout[i] = B[fi];
-
-			for (size_t j = 0; j < env->dim; ++j) {
-				xout[i] += A[i * env->dim + j] * xin[j];
-			}
-
+		for (size_t j = 0; j < env->dim; ++j) {
+			xout[i] += A[i * env->dim + j] * xin[j];
 		}
 
 		inst_event(9910002, 0);

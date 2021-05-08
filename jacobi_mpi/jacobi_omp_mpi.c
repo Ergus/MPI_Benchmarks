@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "benchmarks_mpi.h"
+#include "jacobi_omp_mpi.h"
 
 extern void jacobi_base(
 	const double * __restrict__ A,
@@ -23,70 +23,6 @@ extern void jacobi_base(
 	const double * __restrict__ xin,
 	double * __restrict__ xouti, size_t dim
 );
-
-void init_AB(double *A, double *B, const envinfo *env)
-{
-	const size_t first_row = env->ldim * env->rank;
-
-	#pragma omp parallel
-	{
-		struct drand48_data drand_buf;
-		srand48_r(env->first_local_thread + omp_get_thread_num(),
-		          &drand_buf);
-
-		#pragma omp for
-		for (size_t i = 0; i < env->ldim; ++i) {
-
-			double cum = 0.0, sum = 0.0, x;
-
-			for (size_t j = 0; j < env->dim; ++j) {
-				drand48_r(&drand_buf, &x);
-				A[i * env->dim + j] = x;
-				cum += fabs(x);
-				sum += x;
-			}
-
-			const double valii = A[i * env->dim + first_row + i];
-
-			if (signbit(valii)) {
-				A[i * env->dim + first_row + i] = valii - cum;
-				B[first_row + i] = sum - cum;
-			} else {
-				A[i * env->dim + first_row + i] = valii + cum;
-				B[first_row + i] = sum + cum;
-			}
-		}
-	}
-}
-
-void jacobi_modify(double *A, double *B, const envinfo *env)
-{
-	const size_t first_row = env->ldim * env->rank;
-
-	#pragma omp parallel
-	{
-		struct drand48_data drand_buf;
-		srand48_r(env->first_local_thread + omp_get_thread_num(),
-		          &drand_buf);
-
-		#pragma omp for
-		for (size_t i = 0; i < env->ldim; ++i) {
-
-			double cum = 0.0, sum = 0.0, x;
-
-			const double Aii = A[i * env->dim + first_row + i];
-
-			for (size_t j = 0; j < env->dim; ++j) {
-				if (first_row + i == j) {
-					A[i * env->dim + j] = 0.0;
-				} else {
-					A[i * env->dim + j] = - (A[i * env->dim + j] / Aii);
-				}
-			}
-			B[first_row + i] /= Aii;
-		}
-	}
-}
 
 // A * xin + B = xout
 void jacobi_omp(const double *A, const double *B,
@@ -101,14 +37,6 @@ void jacobi_omp(const double *A, const double *B,
 		jacobi_base(&A[i * env->dim], B[first_row + i], xin, &xout[i], env->dim);
 
 		inst_event(9910002, 0);
-	}
-}
-
-void init_x(double *x, const size_t dim, const double val)
-{
-	#pragma omp parallel for
-	for (size_t i = 0; i < dim; ++i) { // loop nodes
-		x[i] = val;
 	}
 }
 

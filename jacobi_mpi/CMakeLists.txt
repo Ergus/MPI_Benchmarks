@@ -13,17 +13,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(TEST "jacobi")
 
-add_executable(jacobi_omp_mpi jacobi_omp_mpi.c)
+# CMAKE_C_FLAGS_RELEASE is a space separated string.
+# But add_custom_command needs a list. In cmake lists are strings with ;
+string(REGEX REPLACE "[ \t]+" ";" LIBBASE_FLAGS ${CMAKE_C_FLAGS_RELEASE})
+
+add_custom_command(
+  OUTPUT libbase.o
+  COMMAND ${ICC} -c ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c ${LIBBASE_FLAGS} -o libbase.o
+  MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c
+  COMMENT "Building base object")
+
+
+add_executable(jacobi_omp_mpi jacobi_omp_mpi.c libbase.o)
 target_link_libraries(jacobi_omp_mpi argparser)
 
 add_test(NAME Test_jacobi
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)
-
-# Set this for the substitutions in configure_file
-set(TEST "jacobi")
 
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_jacobi_dim.sh @ONLY)

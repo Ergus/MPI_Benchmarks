@@ -17,6 +17,13 @@
 
 #include "benchmarks_mpi.h"
 
+extern void jacobi_base(
+	const double * __restrict__ A,
+	double Bi,
+	const double * __restrict__ xin,
+	double * __restrict__ xouti, size_t dim
+);
+
 void init_AB(double *A, double *B, const envinfo *env)
 {
 	const size_t first_row = env->ldim * env->rank;
@@ -91,11 +98,7 @@ void jacobi_omp(const double *A, const double *B,
 	for (size_t i = 0; i < env->ldim; ++i) {
 		inst_event(9910002, env->dim);
 
-		xout[i] = B[first_row + i];
-
-		for (size_t j = 0; j < env->dim; ++j) {
-			xout[i] += A[i * env->dim + j] * xin[j];
-		}
+		jacobi_base(&A[i * env->dim], B[first_row + i], xin, &xout[i], env->dim);
 
 		inst_event(9910002, 0);
 	}

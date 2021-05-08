@@ -43,12 +43,12 @@ typedef extrae_value_t inst_value_t;
 #define inst_define_event_type(type,name,nvalues,values,descriptions) \
 	Extrae_define_event_type(type,name,nvalues,values,descriptions)
 #define inst_event(evt, val) Extrae_event(evt, val)
-#else
+#else // __WITH_EXTRAE
 typedef size_t inst_type_t;
 typedef size_t inst_value_t;
 #define inst_define_event_type(type,name,nvalues,values,descriptions)
 #define inst_event(evt, val)
-#endif
+#endif // __WITH_EXTRAE
 
 	typedef struct {
 		int rank, worldsize;

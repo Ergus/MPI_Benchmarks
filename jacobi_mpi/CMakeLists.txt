@@ -25,9 +25,10 @@ add_custom_command(
   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c
   COMMENT "Building base object")
 
+add_library(base STATIC libbase.o)
 
-add_executable(jacobi_omp_mpi jacobi_omp_mpi.c libbase.o)
-target_link_libraries(jacobi_omp_mpi argparser)
+add_executable(jacobi_omp_mpi jacobi_omp_mpi.c)
+target_link_libraries(jacobi_omp_mpi argparser base)
 
 add_test(NAME Test_jacobi
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)

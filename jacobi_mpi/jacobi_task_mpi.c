@@ -24,19 +24,43 @@ extern void jacobi_base(
 	double * __restrict__ xouti, size_t dim
 );
 
+
+void jacobi(const double *A, const double *B,
+            const double *xin, double *xout, size_t ts, size_t dim
+) {
+	for (size_t i = 0; i < ts; ++i) {
+		inst_event(9910002, dim);
+
+		jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
+
+		inst_event(9910002, 0);
+	}
+}
+
+
 // A * xin + B = xout
 void jacobi_omp(const double *A, const double *B,
                 const double *xin, double *xout, const envinfo *env
 ) {
 	const size_t first_row = env->ldim * env->rank;
+	const size_t dim = env->dim;
+	const size_t ts = env->ts;
 
-	#pragma omp parallel for
-	for (size_t i = 0; i < env->ldim; ++i) {
-		inst_event(9910002, env->dim);
+	#pragma omp parallel
+	#pragma omp single
+	{
+		for (size_t i = 0; i < env->ldim; i += env->ts) {
 
-		jacobi_base(&A[i * env->dim], B[first_row + i], xin, &xout[i], env->dim);
+			#pragma omp task											\
+				depend(in:A[i * dim])									\
+				depend(in:xin[0])										\
+				depend(in:B[i])											\
+				depend(out:xout[i])
+			{
+				jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], ts, dim);
+			}
 
-		inst_event(9910002, 0);
+		}
 	}
 }
 

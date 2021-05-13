@@ -19,6 +19,7 @@ set(TEST "jacobi")
 # But add_custom_command needs a list. In cmake lists are strings with ;
 string(REGEX REPLACE "[ \t]+" ";" LIBBASE_FLAGS ${CMAKE_C_FLAGS_RELEASE})
 
+# libbase.a
 add_custom_command(
   OUTPUT libbase.o
   COMMAND ${ICC} -c ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c ${LIBBASE_FLAGS} -o libbase.o
@@ -27,11 +28,17 @@ add_custom_command(
 
 add_library(base STATIC libbase.o)
 
-add_executable(jacobi_omp_mpi jacobi_omp_mpi.c)
-target_link_libraries(jacobi_omp_mpi argparser base)
+foreach(EXECUTABLE jacobi_omp_mpi jacobi_task_mpi jacobi_serial)
 
-add_test(NAME Test_jacobi
-  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./jacobi_omp_mpi 128 8 3)
+  message("- Add benchmark: ${EXECUTABLE}")
+
+  # jacobi with parallel for
+  add_executable(${EXECUTABLE} "${EXECUTABLE}.c")
+  target_link_libraries(${EXECUTABLE} argparser base)
+
+  add_test(NAME "Test_${EXECUTABLE}"
+    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+endforeach()
 
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_jacobi_dim.sh @ONLY)

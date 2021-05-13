@@ -52,7 +52,7 @@ typedef size_t inst_value_t;
 
 	typedef struct {
 		int rank, worldsize;
-		size_t maxthreads, cpu_count, TS;
+		size_t maxthreads, cpu_count, ts;
 		size_t dim, ldim, first_local_thread;
 		int printerA, printerB, printerC;
 	} envinfo;
@@ -74,8 +74,8 @@ typedef size_t inst_value_t;
 		_env->cpu_count = count_sched_cpus();
 		myassert(_env->cpu_count >= 0);
 
-		_env->TS = TS;
-		myassert(_env->TS > 0);
+		_env->ts = TS;
+		myassert(_env->ts > 0);
 
 		myassert(dim >= (size_t)_env->worldsize);	// more rows than task size
 		modcheck(dim, _env->worldsize);	// we need to split exactly

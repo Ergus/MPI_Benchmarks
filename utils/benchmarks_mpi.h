@@ -57,7 +57,7 @@ typedef size_t inst_value_t;
 		int printerA, printerB, printerC;
 	} envinfo;
 
-	void Initialize(envinfo * _env, int *argc, char ***argv, size_t dim, size_t TS)
+	void Initialize(envinfo * _env, int *argc, char ***argv, size_t dim, size_t ts)
 	{
 		int provided = 0;
 		MPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided);
@@ -74,8 +74,9 @@ typedef size_t inst_value_t;
 		_env->cpu_count = count_sched_cpus();
 		myassert(_env->cpu_count >= 0);
 
-		_env->ts = TS;
+		_env->ts = ts;
 		myassert(_env->ts > 0);
+		modcheck(dim, _env->ts)
 
 		myassert(dim >= (size_t)_env->worldsize);	// more rows than task size
 		modcheck(dim, _env->worldsize);	// we need to split exactly

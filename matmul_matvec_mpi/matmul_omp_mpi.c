@@ -17,6 +17,26 @@
 
 #include "benchmarks_mpi.h"
 
+void matrix_init(double * const __restrict__ array,
+                 const size_t rows, const size_t cols, int seed
+) {
+	const size_t fullsize = rows * cols;
+
+	#pragma omp parallel
+	{
+		struct drand48_data drand_buf;
+		srand48_r(seed + omp_get_thread_num(), &drand_buf);
+		double x;
+
+		#pragma omp for
+		for(size_t i = 0; i < fullsize; ++i) {
+			drand48_r(&drand_buf, &x);
+			array[i] = x;
+		}
+	}
+}
+
+
 void matmul_omp(const double *A, const double *B, double * const C,
                 size_t lrowsA, size_t dim, size_t colsBC)
 {

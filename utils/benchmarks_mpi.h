@@ -67,7 +67,7 @@ typedef size_t inst_value_t;
 		MPI_Comm_size(MPI_COMM_WORLD, &(_env->worldsize));
 
 		omp_set_dynamic(0);	// Disable dynamic teams
-		omp_set_schedule(omp_sched_static, TS);
+		omp_set_schedule(omp_sched_static, ts);
 		_env->maxthreads = omp_get_max_threads();
 
 		// test that the cpuset >= number of local threads

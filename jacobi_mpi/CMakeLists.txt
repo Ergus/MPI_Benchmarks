@@ -41,8 +41,8 @@ foreach(EXECUTABLE jacobi_omp_mpi jacobi_task_mpi jacobi_serial)
 endforeach()
 
 # submiter
-configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_jacobi_dim.sh @ONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_jacobi_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)
 
 # Submit
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)

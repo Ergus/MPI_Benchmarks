@@ -82,55 +82,92 @@ void register_blas_events()
 
 #endif // __WITH_EXTRAE
 
+void dgemm_(const char *transa, const char *transb, int *l, int *n, int *m, double *alpha,
+	const void *a, int *lda, void *b, int *ldb, double *beta, void *c, int *ldc);
 
-void dgemm_(const char *transa, const char *transb,
-            int *l, int *n, int *m, double *alpha,
-            const void *a, int *lda, void *b, int *ldb,
-            double *beta, void *c, int *ldc);
+void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n, double *alpha,
+	double *a, int *lda, double *b, int *ldb);
 
-void dtrsm_ (char *side, char *uplo, char *transa,
-             char *diag, int *m, int *n, double *alpha,
-             double *a, int *lda, double *b, int *ldb);
-
-void dsyrk_ (char *uplo, char *trans, int *n, int *k,
-             double *alpha, double *a, int *lda,
-             double *beta, double *c, int *ldc);
+void dsyrk_(char *uplo, char *trans, int *n, int *k, double *alpha, double *a, int *lda,
+	double *beta, double *c, int *ldc);
 
 
-static inline void omp_potrf(double * const A, int ts, int ld)
+
+static inline void omp_potrf(int ts, double *A)
 {
 	inst_event(BLAS_EVENT, BLAS_POTRF);
-    int INFO;
-    const char L = 'L';
-    dpotrf_(&L, &ts, A, &ld, &INFO);
+	assert(A != NULL);
+
+    static int INFO;
+    static const char L = 'L';
+
+    dpotrf_(&L, &ts, A, &ts, &INFO);
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 
-static inline void omp_trsm(double *A, double *B, int ts, int ld)
+static inline void omp_trsm(int ts, double *A, double *B)
 {
 	inst_event(BLAS_EVENT, BLAS_TRSM);
+	assert(A != NULL);
+	assert(B != NULL);
+
+	/* cblas_dtrsm( */
+	/* 	CblasColMajor, CblasRight, CblasLower, CblasTrans, CblasNonUnit, */
+	/* 	ts, ts, 1.0, */
+	/* 	A, ts, B, ts */
+	/* ); */
+
     char LO = 'L', TR = 'T', NU = 'N', RI = 'R';
     double DONE = 1.0;
-    dtrsm_(&RI, &LO, &TR, &NU, &ts, &ts, &DONE, A, &ld, B, &ld );
+    dtrsm_(&RI, &LO, &TR, &NU, &ts, &ts, &DONE, A, &ts, B, &ts);
+
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 
-static inline void omp_gemm(double *A, double *B, double *C, int ts, int ld)
+static inline void omp_gemm(int ts, double *A, double *B, double *C)
 {
 	inst_event(BLAS_EVENT, BLAS_GEMM);
+	assert(A != NULL);
+	assert(B != NULL);
+	assert(C != NULL);
+
+	/* cblas_dgemm( */
+	/* 	CblasColMajor, CblasNoTrans, CblasTrans, */
+	/* 	ts, ts, ts, -1.0, */
+	/* 	A, ts, B, ts, 1.0, C, ts */
+	/* ); */
+
     const char TR = 'T', NT = 'N';
     double DONE = 1.0, DMONE = -1.0;
-    dgemm_(&NT, &TR, &ts, &ts, &ts, &DMONE, A, &ld, B, &ld, &DONE, C, &ld);
+    dgemm_(&NT, &TR, &ts, &ts, &ts, &DMONE, A, &ts, B, &ts, &DONE, C, &ts);
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 
-static inline void omp_syrk(double *A, double *B, int ts, int ld)
+static inline void omp_syrk(int ts, double *A, double *B)
 {
 	inst_event(BLAS_EVENT, BLAS_SYRK);
-    char LO = 'L', NT = 'N';
-    double DONE = 1.0, DMONE = -1.0;
-    dsyrk_(&LO, &NT, &ts, &ts, &DMONE, A, &ld, &DONE, B, &ld );
+	assert(A != NULL);
+	assert(B != NULL);
+
+	/* cblas_dsyrk( */
+	/* 	CblasColMajor, CblasLower, CblasNoTrans, */
+	/* 	ts, ts, -1.0, */
+	/* 	A, ts, 1.0, B, ts */
+	/* ); */
+
+    static char LO = 'L', NT = 'N';
+    static double DONE = 1.0, DMONE = -1.0;
+    dsyrk_(&LO, &NT, &ts, &ts, &DMONE, A, &ts, &DONE, B, &ts);
 	inst_event(BLAS_EVENT, BLAS_NONE);
+}
+
+static inline void wait(MPI_Request *comm_req)
+{
+	int comm_comp = 0;
+
+	do {
+		MPI_Test(comm_req, &comm_comp, MPI_STATUS_IGNORE);
+	} while (!comm_comp);
 }
 
 

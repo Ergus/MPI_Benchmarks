@@ -92,72 +92,65 @@ void dsyrk_(char *uplo, char *trans, int *n, int *k, double *alpha, double *a, i
 	double *beta, double *c, int *ldc);
 
 
-
-static inline void omp_potrf(int ts, double *A)
+static inline void omp_potrf(int ts, double A[ts][ts])
 {
 	inst_event(BLAS_EVENT, BLAS_POTRF);
 	assert(A != NULL);
 
-    static int INFO;
-    static const char L = 'L';
+	static int INFO;
+	static const char L = 'L';
 
-    dpotrf_(&L, &ts, A, &ts, &INFO);
+	dpotrf_(&L, &ts, (double *)A, &ts, &INFO);
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 
-static inline void omp_trsm(int ts, double *A, double *B)
+static inline void omp_trsm(int ts, double A[ts][ts], double B[ts][ts])
 {
 	inst_event(BLAS_EVENT, BLAS_TRSM);
 	assert(A != NULL);
 	assert(B != NULL);
 
-	/* cblas_dtrsm( */
-	/* 	CblasColMajor, CblasRight, CblasLower, CblasTrans, CblasNonUnit, */
-	/* 	ts, ts, 1.0, */
-	/* 	A, ts, B, ts */
-	/* ); */
-
     char LO = 'L', TR = 'T', NU = 'N', RI = 'R';
     double DONE = 1.0;
-    dtrsm_(&RI, &LO, &TR, &NU, &ts, &ts, &DONE, A, &ts, B, &ts);
+    dtrsm_(&RI, &LO, &TR, &NU, &ts, &ts, &DONE,
+	       (double *)A, &ts,
+	       (double *)B, &ts);
 
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 
-static inline void omp_gemm(int ts, double *A, double *B, double *C)
-{
+static inline void omp_gemm(
+	int ts,
+	double A[ts][ts],
+	double B[ts][ts],
+	double C[ts][ts]
+) {
 	inst_event(BLAS_EVENT, BLAS_GEMM);
 	assert(A != NULL);
 	assert(B != NULL);
 	assert(C != NULL);
 
-	/* cblas_dgemm( */
-	/* 	CblasColMajor, CblasNoTrans, CblasTrans, */
-	/* 	ts, ts, ts, -1.0, */
-	/* 	A, ts, B, ts, 1.0, C, ts */
-	/* ); */
-
     const char TR = 'T', NT = 'N';
     double DONE = 1.0, DMONE = -1.0;
-    dgemm_(&NT, &TR, &ts, &ts, &ts, &DMONE, A, &ts, B, &ts, &DONE, C, &ts);
+    dgemm_(&NT, &TR, &ts, &ts, &ts, &DMONE,
+	       (double *)A, &ts,
+	       (double *)B, &ts, &DONE,
+	       (double *)C, &ts);
+
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 
-static inline void omp_syrk(int ts, double *A, double *B)
+static inline void omp_syrk(int ts, double A[ts][ts], double B[ts][ts])
 {
 	inst_event(BLAS_EVENT, BLAS_SYRK);
 	assert(A != NULL);
 	assert(B != NULL);
 
-	/* cblas_dsyrk( */
-	/* 	CblasColMajor, CblasLower, CblasNoTrans, */
-	/* 	ts, ts, -1.0, */
-	/* 	A, ts, 1.0, B, ts */
-	/* ); */
-
     static char LO = 'L', NT = 'N';
     static double DONE = 1.0, DMONE = -1.0;
-    dsyrk_(&LO, &NT, &ts, &ts, &DMONE, A, &ts, &DONE, B, &ts);
+    dsyrk_(&LO, &NT, &ts, &ts, &DMONE,
+	       (double *)A, &ts, &DONE,
+	       (double *)B, &ts);
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 

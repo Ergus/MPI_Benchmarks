@@ -61,6 +61,24 @@ void print_block(const size_t ts, double A[ts][ts], const envinfo *env)
 }
 
 
+bool compare_blocks(const size_t ts,
+                    double B1[ts][ts], double B2[ts][ts],
+                    const envinfo *env
+) {
+	for (size_t k = 0; k < ts; ++k) {
+		for (size_t l = 0; l < ts; ++l) {
+			if (B1[k][l] != B2[k][l]) {
+				printf("Check failed for B[%zu][%zu] = %lf expected: %lf rank %d\n",
+				       k, l,
+				       B1[k][l], B2[k][l],
+				       env->rank);
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 
 void get_block_rank(const size_t nt, int block_rank[nt][nt], const envinfo *env)
 {
@@ -140,7 +158,6 @@ void fill_block(const size_t ts, double block[ts][ts],
 
 void cholesky_init(const size_t nt, const size_t ts,
                    double A[nt][nt][ts][ts], double Ans[nt][nt][ts][ts],
-                   const bool check,
                    int block_rank[nt][nt], const envinfo *env
 ) {
 	#pragma omp parallel
@@ -155,12 +172,12 @@ void cholesky_init(const size_t nt, const size_t ts,
 					#pragma omp task depend(out: A[i][j][0:ts][0:ts])	\
 						shared(Ans, A) firstprivate(i, j)
 					{
-						if (check) {
+						if (Ans != NULL) {
 							fill_block(ts, Ans[i][j], i, j, env);
 						}
 
 						if (block_rank[i][j] == env->rank) {
-							if (check) {
+							if (Ans != NULL) {
 								memcpy(A[i][j], Ans[i][j], ts * ts * sizeof(double));
 							} else {
 								fill_block(ts, A[i][j], i, j, env);
@@ -170,8 +187,6 @@ void cholesky_init(const size_t nt, const size_t ts,
 				} // for j
 			} // for i
 		} // omp single
-
-		#pragma omp taskwait
 	} // omp parallel
 }
 
@@ -204,7 +219,6 @@ void cholesky_single(const size_t nt, const size_t ts,
 					omp_syrk(ts, A[k][i], A[i][i]);
 				} // for i
 			} // for k
-			#pragma omp taskwait
 		} // pragma omp single
 	}  // pragma omp parallel
 }
@@ -376,11 +390,8 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 					}
 				} // for i
 			} // for k
-			#pragma omp taskwait
 		} // pragma omp single
-
 	} // pragma omp parallel
-	MPI_Barrier(MPI_COMM_WORLD);
 }
 
 
@@ -413,8 +424,7 @@ int main(int argc, char *argv[])
 		(*Ans)[nt][TS][TS] = (CHECK ? malloc(ROWS * ROWS * sizeof(double)) : NULL);
 
 
-	cholesky_init(nt, TS, A, Ans, CHECK, block_rank, &env);
-
+	cholesky_init(nt, TS, A, Ans, block_rank, &env);
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	// ===========================================
@@ -440,23 +450,17 @@ int main(int argc, char *argv[])
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	// Verification
-	if (CHECK && env.rank == 1) {
+	// Verification
+	if (CHECK) {
 		bool match = true;
 		for (size_t i = 0; i < nt && match; i++) {
 			for (size_t j = 0; j < nt && match; j++) {
 				if (block_rank[i][j] == env.rank) {
-					for (size_t k = 0; k < env.ts; ++k) {
-						for (size_t l = 0; l < env.ts; ++l) {
-							if (A[i][j][k][l] != Ans[i][j][k][l]) {
-								match = false;
-								fprintf(stdout,
-								        "Check failed in A[%zu][%zu][%zu][%zu]=%lf expected: %lf rank %d\n",
-								        i, j, k, l,
-								        A[i][j][k][l], Ans[i][j][k][l],
-								        env.rank);
-								break;
-							}
-						}
+					match = compare_blocks(env.ts, A[i][j], Ans[i][j], &env);
+
+					if (!match) {
+						printf("Check failed in block A[%zu][%zu] in rank %d\n",
+						       i, j, env.rank);
 					}
 				}
 			}

@@ -203,8 +203,8 @@ void cholesky_single(const size_t nt, const size_t ts,
 						depend(out: A[i][i]) firstprivate(k, i)
 					omp_syrk(ts, A[k][i], A[i][i]);
 				} // for i
-				#pragma omp taskwait
 			} // for k
+			#pragma omp taskwait
 		} // pragma omp single
 	}  // pragma omp parallel
 }
@@ -375,10 +375,8 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 						omp_syrk(ts, ptr1, A[i][i]);
 					}
 				} // for i
-
-				#pragma omp taskwait
-
 			} // for k
+			#pragma omp taskwait
 		} // pragma omp single
 
 	} // pragma omp parallel

@@ -24,80 +24,24 @@ extern "C" {
 
 #include "benchmarks_mpi.h"
 
-void init_AB(double *A, double *B, const envinfo *env)
-{
-	const size_t first_row = env->ldim * env->rank;
+	void jacobi_base(
+		const double * __restrict__ A,
+		double Bi,
+		const double * __restrict__ xin,
+		double * __restrict__ xouti, size_t dim
+	);
 
-	#pragma omp parallel
-	{
-		struct drand48_data drand_buf;
-		srand48_r(env->first_local_thread + omp_get_thread_num(),
-		          &drand_buf);
+	void jacobi(const double *A, const double *B,
+	            const double *xin, double *xout, size_t ts, size_t dim
+	) {
+		for (size_t i = 0; i < ts; ++i) {
+			inst_event(9910002, dim);
 
-		#pragma omp for
-		for (size_t i = 0; i < env->ldim; ++i) {
+			jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
 
-			double cum = 0.0, sum = 0.0, x;
-
-			for (size_t j = 0; j < env->dim; ++j) {
-				drand48_r(&drand_buf, &x);
-				A[i * env->dim + j] = x;
-				cum += fabs(x);
-				sum += x;
-			}
-
-			const double valii = A[i * env->dim + first_row + i];
-
-			if (signbit(valii)) {
-				A[i * env->dim + first_row + i] = valii - cum;
-				B[first_row + i] = sum - cum;
-			} else {
-				A[i * env->dim + first_row + i] = valii + cum;
-				B[first_row + i] = sum + cum;
-			}
+			inst_event(9910002, 0);
 		}
 	}
-}
-
-
-void init_x(double *x, const size_t dim, const double val)
-{
-	#pragma omp parallel for
-	for (size_t i = 0; i < dim; ++i) { // loop nodes
-		x[i] = val;
-	}
-}
-
-
-void jacobi_modify(double *A, double *B, const envinfo *env)
-{
-	const size_t first_row = env->ldim * env->rank;
-
-	#pragma omp parallel
-	{
-		struct drand48_data drand_buf;
-		srand48_r(env->first_local_thread + omp_get_thread_num(),
-		          &drand_buf);
-
-		#pragma omp for
-		for (size_t i = 0; i < env->ldim; ++i) {
-
-			double cum = 0.0, sum = 0.0, x;
-
-			const double Aii = A[i * env->dim + first_row + i];
-
-			for (size_t j = 0; j < env->dim; ++j) {
-				if (first_row + i == j) {
-					A[i * env->dim + j] = 0.0;
-				} else {
-					A[i * env->dim + j] = - (A[i * env->dim + j] / Aii);
-				}
-			}
-			B[first_row + i] /= Aii;
-		}
-	}
-}
-
 
 #ifdef __cplusplus
 }

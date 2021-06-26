@@ -17,15 +17,69 @@
 
 #include "jacobi_omp_mpi.h"
 
-extern void jacobi_base(
-	const double * __restrict__ A,
-	double Bi,
-	const double * __restrict__ xin,
-	double * __restrict__ xouti, size_t dim
-);
+
+void init_AB_taskfor(double *A, double *B, const envinfo *env)
+{
+	const size_t first_row = env->ldim * env->rank;
+	const size_t dim = env->dim;
+
+	#pragma omp parallel for
+	for (size_t i = 0; i < env->ldim; ++i) {
+		const size_t grow = first_row + i;
+
+		struct drand48_data drand_buf;
+		srand48_r(grow, &drand_buf);
+		double cum = 0.0, sum = 0.0, x;
+
+		for (size_t j = 0; j < dim; ++j) {
+			drand48_r(&drand_buf, &x);
+			A[i * dim + j] = x;
+			cum += fabs(x);
+			sum += x;
+		}
+
+		const double valii = A[i * dim + grow];
+		if (signbit(valii)) {
+			A[i * dim + grow] = valii - cum;
+			B[grow] = sum - cum;
+		} else {
+			A[i * dim + grow] = valii + cum;
+			B[grow] = sum + cum;
+		}
+	}
+}
+
+
+void init_x_taskfor(double *x, const size_t dim, const double val)
+{
+	#pragma omp parallel for
+	for (size_t i = 0; i < dim; ++i) { // loop nodes
+		x[i] = val;
+	}
+}
+
+
+void jacobi_modify_taskfor(double *A, double *B, const envinfo *env)
+{
+	const size_t first_row = env->ldim * env->rank;
+	const size_t dim = env->dim;
+
+	#pragma omp parallel for
+	for (size_t i = 0; i < env->ldim; ++i) {
+		const size_t grow = first_row + i;
+		const double iAii = 1 / fabs(A[i * dim + grow]);
+
+		for (size_t k = 0; k < dim; ++k) {
+			A[i * dim + k]
+				= (grow == k) ? 0.0 : -1.0 * A[i * dim + k] * iAii;
+		}
+		B[grow] *= iAii;
+	}
+}
+
 
 // A * xin + B = xout
-void jacobi_omp(const double *A, const double *B,
+void jacobi_omp_taskfor(const double *A, const double *B,
                 const double *xin, double *xout, const envinfo *env
 ) {
 	const size_t first_row = env->ldim * env->rank;
@@ -69,10 +123,10 @@ int main(int argc, char **argv)
 	double *x2 = (double *) malloc(env.ldim * sizeof(double));
 
 	// Initialize arrays local portions
-	init_AB(lA, B, &env);
-	jacobi_modify(lA, B, &env);
-	init_x(x1, env.dim, 0);
-	init_x(x2, env.ldim, 0);
+	init_AB_taskfor(lA, B, &env);
+	jacobi_modify_taskfor(lA, B, &env);
+	init_x_taskfor(x1, env.dim, 0);
+	init_x_taskfor(x2, env.ldim, 0);
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -87,7 +141,7 @@ int main(int argc, char **argv)
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		jacobi_omp(lA, B, x1, x2, &env);
+		jacobi_omp_taskfor(lA, B, x1, x2, &env);
 
 		MPI_Allgather(x2, env.ldim, MPI_DOUBLE,
 		              x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);

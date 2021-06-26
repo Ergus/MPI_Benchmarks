@@ -17,23 +17,84 @@
 
 #include "jacobi_omp_mpi.h"
 
-extern void jacobi_base(
-	const double * __restrict__ A,
-	double Bi,
-	const double * __restrict__ xin,
-	double * __restrict__ xouti, size_t dim
-);
+void init_AB_task(double *A, double *B, const envinfo *env)
+{
+	const size_t first_row = env->ldim * env->rank;
+	const size_t dim = env->dim;
+
+	#pragma omp parallel
+	{
+		for (size_t i = 0; i < env->ldim; i += ts) { // loop tasks
+
+			#pragma omp task depend(out:A[i * dim]) depend(out:B[first_row + i])
+			for (size_t j = i; j < i + ts; ++j) {
+				const size_t grow = first_row + j;
+
+				struct drand48_data drand_buf;
+				srand48_r(grow, &drand_buf);
+				double cum = 0.0, sum = 0.0, x;
+
+				for (size_t k = 0; k < dim; ++k) {
+					drand48_r(&drand_buf, &x);
+					A[j * dim + k] = x;
+					cum += fabs(x);
+					sum += x;
+				}
+				// Diagonal element condition.
+				const double valii = A[j * dim + grow];
+				if (signbit(valii)) {
+					A[j * dim + grow] = valii - cum;
+					B[grow] = sum - cum;
+				} else {
+					A[j * dim + grow] = valii + cum;
+					B[grow] = sum + cum;
+				}
+			}
+		}
+	}
+}
 
 
-void jacobi(const double *A, const double *B,
-            const double *xin, double *xout, size_t ts, size_t dim
-) {
-	for (size_t i = 0; i < ts; ++i) {
-		inst_event(9910002, dim);
+void init_x(double *x, const size_t dim, const double val)
+{
+	#pragma omp parallel
+	{
+		for (size_t i = 0; i < dim; i += ts) { // loop nodes
 
-		jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
+			#pragma omp task depend(out:x[i])
+			{
+				for (size_t j = i; j < i + ts; ++j) { // loop nodes
+					x[j] = val;
+				}
+			}
+		}
+	}
+}
 
-		inst_event(9910002, 0);
+
+void jacobi_modify(double *A, double *B, const envinfo *env)
+{
+	const size_t first_row = env->ldim * env->rank;
+	const size_t dim = env->dim;
+
+	#pragma omp parallel
+	{
+		for (size_t i = 0; i < env->ldim; i += ts) {
+
+			#pragma omp task depend(inout:A[i * dim]) depend(inout:B[first_row + i])
+			{
+				for (size_t j = i; j < i + ts; ++j) {
+					const size_t grow = first_row + j;
+					const double iAjj = 1 / fabs(A[j * dim + grow]);
+
+					for (size_t k = 0; k < dim; ++k) {
+						A[j * dim + k]
+							= (grow == k) ? 0.0 : -1.0 * A[j * dim + k] * iAjj;
+					}
+					B[grow] *= iAjj;
+				}
+			}
+		}
 	}
 }
 
@@ -51,15 +112,11 @@ void jacobi_omp(const double *A, const double *B,
 	{
 		for (size_t i = 0; i < env->ldim; i += env->ts) {
 
-			#pragma omp task											\
-				depend(in:A[i * dim])									\
-				depend(in:xin[0])										\
-				depend(in:B[i])											\
+			#pragma omp task depend(in:A[i * dim]) \
+				depend(in:xin[0])				   \
+				depend(in:B[i])					   \
 				depend(out:xout[i])
-			{
-				jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], ts, dim);
-			}
-
+			jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], ts, dim);
 		}
 	}
 }

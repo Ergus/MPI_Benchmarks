@@ -24,10 +24,10 @@ void init_AB_task(double *A, double *B, const envinfo *env)
 
 	#pragma omp parallel
 	{
-		for (size_t i = 0; i < env->ldim; i += ts) { // loop tasks
+		for (size_t i = 0; i < env->ldim; i += env->ts) { // loop tasks
 
 			#pragma omp task depend(out:A[i * dim]) depend(out:B[first_row + i])
-			for (size_t j = i; j < i + ts; ++j) {
+			for (size_t j = i; j < i + env->ts; ++j) {
 				const size_t grow = first_row + j;
 
 				struct drand48_data drand_buf;
@@ -55,15 +55,19 @@ void init_AB_task(double *A, double *B, const envinfo *env)
 }
 
 
-void init_x(double *x, const size_t dim, const double val)
-{
+void init_x_task(
+	double *x,
+	const size_t dim,
+	const double val,
+	const envinfo *env
+) {
 	#pragma omp parallel
 	{
-		for (size_t i = 0; i < dim; i += ts) { // loop nodes
+		for (size_t i = 0; i < dim; i += env->ts) { // loop nodes
 
 			#pragma omp task depend(out:x[i])
 			{
-				for (size_t j = i; j < i + ts; ++j) { // loop nodes
+				for (size_t j = i; j < i + env->ts; ++j) { // loop nodes
 					x[j] = val;
 				}
 			}
@@ -72,18 +76,18 @@ void init_x(double *x, const size_t dim, const double val)
 }
 
 
-void jacobi_modify(double *A, double *B, const envinfo *env)
+void jacobi_modify_task(double *A, double *B, const envinfo *env)
 {
 	const size_t first_row = env->ldim * env->rank;
 	const size_t dim = env->dim;
 
 	#pragma omp parallel
 	{
-		for (size_t i = 0; i < env->ldim; i += ts) {
+		for (size_t i = 0; i < env->ldim; i += env->ts) {
 
 			#pragma omp task depend(inout:A[i * dim]) depend(inout:B[first_row + i])
 			{
-				for (size_t j = i; j < i + ts; ++j) {
+				for (size_t j = i; j < i + env->ts; ++j) {
 					const size_t grow = first_row + j;
 					const double iAjj = 1 / fabs(A[j * dim + grow]);
 
@@ -100,12 +104,11 @@ void jacobi_modify(double *A, double *B, const envinfo *env)
 
 
 // A * xin + B = xout
-void jacobi_omp(const double *A, const double *B,
-                const double *xin, double *xout, const envinfo *env
+void jacobi_omp_task(const double *A, const double *B,
+                     const double *xin, double *xout, const envinfo *env
 ) {
 	const size_t first_row = env->ldim * env->rank;
 	const size_t dim = env->dim;
-	const size_t ts = env->ts;
 
 	#pragma omp parallel
 	#pragma omp single
@@ -116,7 +119,7 @@ void jacobi_omp(const double *A, const double *B,
 				depend(in:xin[0])				   \
 				depend(in:B[i])					   \
 				depend(out:xout[i])
-			jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], ts, dim);
+			jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], env->ts, dim);
 		}
 	}
 }
@@ -150,10 +153,10 @@ int main(int argc, char **argv)
 	double *x2 = (double *) malloc(env.ldim * sizeof(double));
 
 	// Initialize arrays local portions
-	init_AB(lA, B, &env);
-	jacobi_modify(lA, B, &env);
-	init_x(x1, env.dim, 0);
-	init_x(x2, env.ldim, 0);
+	init_AB_task(lA, B, &env);
+	jacobi_modify_task(lA, B, &env);
+	init_x_task(x1, env.dim, 0, &env);
+	init_x_task(x2, env.ldim, 0, &env);
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -168,7 +171,7 @@ int main(int argc, char **argv)
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		jacobi_omp(lA, B, x1, x2, &env);
+		jacobi_omp_task(lA, B, x1, x2, &env);
 
 		MPI_Allgather(x2, env.ldim, MPI_DOUBLE,
 		              x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);

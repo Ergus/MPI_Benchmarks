@@ -164,8 +164,6 @@ void cholesky_init(const size_t nt, const size_t ts,
 	{
 		#pragma omp single
 		{
-			const size_t ts = env->ts;
-
 			for (size_t i = 0; i < nt; ++i) {
 				for (size_t j = 0; j < nt; ++j) {
 
@@ -198,7 +196,6 @@ void cholesky_single(const size_t nt, const size_t ts,
 	{
 		#pragma omp single
 		{
-
 			for (size_t k = 0; k < nt; ++k) {
 				#pragma omp task depend(inout: A[k][k]) firstprivate(k)
 				omp_potrf(ts, A[k][k]);
@@ -264,8 +261,7 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 									if (dst == block_rank[k][kk]) {
 										MPI_Isend(A[k][k], ts * ts, MPI_DOUBLE,
 										          dst, tag,
-										          MPI_COMM_WORLD, &reqs[nreqs]);
-										++nreqs;
+										          MPI_COMM_WORLD, &reqs[nreqs++]);
 										break;
 									}
 								}
@@ -459,8 +455,8 @@ int main(int argc, char *argv[])
 					match = compare_blocks(env.ts, A[i][j], Ans[i][j], &env);
 
 					if (!match) {
-						printf("Check failed in block A[%zu][%zu] in rank %d\n",
-						       i, j, env.rank);
+						fprintf(stderr, "Check failed in block A[%zu][%zu] in rank %d\n",
+						        i, j, env.rank);
 					}
 				}
 			}
@@ -477,16 +473,20 @@ int main(int argc, char *argv[])
 	if (CHECK) {
 		assert(Ans);
 		free(Ans);
+		Ans = NULL;
 	}
 
 	assert(C);
 	free(C);
+	C = NULL;
 
 	assert(B);
 	free(B);
+	B = NULL;
 
 	assert(A);
 	free(A);
+	A = NULL;
 
 	free(block_rank);
 	free_args();

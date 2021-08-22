@@ -32,12 +32,19 @@ add_compile_definitions(_GNU_SOURCE)
 
 # Enable address sanitizer
 if (WITH_ASAN)
-  message("Using ASAN")
+  message("-- Using ASAN")
   add_compile_options(-fno-omit-frame-pointer -fsanitize=address)
-  add_compile_definitions(__WITH_ASAN=1)
+
+  find_library(LIBASAN
+    NAMES asan
+    HINTS ENV LIBRARY_PATH LD_LIBRARY_PATH)
+
+  set (ASAN_OPTIONS
+    "\"detect_leaks=0:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1\"")
 
   set (CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+
 endif ()
 
 # Enable Extrae

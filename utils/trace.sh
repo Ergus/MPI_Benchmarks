@@ -19,13 +19,15 @@
 export EXTRAE_ON=1
 export EXTRAE_CONFIG_FILE=extrae.xml
 
+export ASAN_OPTIONS=@ASAN_OPTIONS@
+
 # Remove previous traces
 if  [ -z ${MPI_LOCALRANKID} ] || [ $MPI_LOCALRANKID -eq 0 ]; then
 	echo "Deleting old traces"
 	rm -rf TRACE.* set-0/ *.prv *.row *.pcf
 fi
 
-export LD_PRELOAD=${EXTRAE_HOME}/lib/libompitrace.so
+export LD_PRELOAD="@LIBASAN@:${EXTRAE_HOME}/lib/libompitrace.so"
 $@
 unset LD_PRELOAD
 

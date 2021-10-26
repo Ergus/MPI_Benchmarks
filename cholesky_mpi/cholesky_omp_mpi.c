@@ -419,7 +419,28 @@ int main(int argc, char *argv[])
 		(*C)[TS][TS] = malloc(ROWS * TS * sizeof(double)),          // [nt][TS][TS]
 		(*Ans)[nt][TS][TS] = (CHECK ? malloc(ROWS * ROWS * sizeof(double)) : NULL);
 
+	myassert(A != NULL);
+	myassert(B != NULL);
+	myassert(C != NULL);
 
+	// ===========================================
+	// WARMUP: The first iteration is slow, likely because of the
+	// overhead of thread creation, which seems to impact MPI. Extra
+	// threads are needed for the weak tasks, which stay alive for
+	// autowait. Note: we want them to stay alive also so that there
+	// is more opportunity to connect later tasks in the namespace.
+	cholesky_init(nt, TS, A, Ans, block_rank, &env);
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	printf("# Starting warmup\n");
+	timer atimer_warmup = create_timer("Warmup_time");
+	cholesky_mpi(nt, TS, A, B, C, block_rank, &env);
+	MPI_Barrier(MPI_COMM_WORLD);
+	stop_timer(&atimer_warmup);
+	printf("# Finished warmup\n");
+
+	// ===========================================
+	// ACTUAL CALCULATION
 	cholesky_init(nt, TS, A, Ans, block_rank, &env);
 	MPI_Barrier(MPI_COMM_WORLD);
 

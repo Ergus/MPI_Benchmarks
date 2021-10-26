@@ -236,7 +236,11 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 			const size_t np = env->worldsize;
 			const size_t rank = env->rank;
 
+			int sentinel = 0;
+			MPI_Request *requests2 = malloc(nt * sizeof(MPI_Request));
+
 			for (size_t k = 0; k < nt; ++k) {
+
 				// sentinel task to limit communication task parallelism
 				if (block_rank[k][k] == rank) {
 					#pragma omp task depend(inout: A[k][k]) firstprivate(k)
@@ -266,28 +270,32 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 									}
 								}
 							}
-							for (size_t i = 0; i < nreqs; ++i) {
-								wait(&reqs[i]);
-							}
+							/* for (size_t i = 0; i < nreqs; ++i) { */
+							/* 	wait(&reqs[i]); */
+							/* } */
 						}
 					} else { // block_rank[k][k] != rank
 						for (size_t i = k + 1; i < nt; ++i) {
 							if (block_rank[k][i] == rank) {
-								#pragma omp task depend(out: B[0]) firstprivate(k, tag) untied
+
+								#pragma omp task depend(out: B[0]) \
+									firstprivate(k, tag) untied
 								{
-									MPI_Request recv_req;
+									MPI_Request request1;
+
 									MPI_Irecv(B, ts * ts, MPI_DOUBLE,
 									          block_rank[k][k], tag,
-									          MPI_COMM_WORLD, &recv_req);
-									wait(&recv_req);
+									          MPI_COMM_WORLD, &request1);
+									wait(&request1);
 								}
+
 								break;
 							}
 						}
 					} // block_rank[k*nt+k] == rank
-				} // np != 1 && A[k][k]
 
-				MPI_Barrier(MPI_COMM_WORLD);
+					// MPI_Barrier(MPI_COMM_WORLD);
+				} // np != 1 && A[k][k]
 
 				for (size_t i = k + 1; i < nt; ++i) {
 					if (block_rank[k][i] == rank) {
@@ -326,10 +334,11 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 										MPI_Isend(A[k][i], ts * ts, MPI_DOUBLE,
 										          dst, tag,
 										          MPI_COMM_WORLD, &send_req);
-										wait(&send_req);
+										// wait(&send_req);
 									}
 								}
 							}
+
 						} else {
 							char recv_flag = (block_rank[i][i] == rank);
 
@@ -353,19 +362,28 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 
 							// Decide if I should send
 							if (recv_flag != 0) {
-								#pragma omp task depend(out: C[i]) firstprivate(k, i, tag) untied
+
+								#pragma omp task depend(out: C[i]) \
+									depend(out: requests2[i]) \
+									firstprivate(k, i, tag) untied
 								{
-									MPI_Request recv_req;
 									MPI_Irecv(C[i], ts * ts, MPI_DOUBLE,
 									          block_rank[k][i], tag,
-									          MPI_COMM_WORLD, &recv_req);
-									wait(&recv_req);
+									          MPI_COMM_WORLD, &requests2[i]);
+								}
+
+								#pragma omp task depend(inout: C[i]) \
+									depend(inout: requests2[i]) \
+									depend(inout: sentinel) \
+									firstprivate(i) untied
+								{
+									wait(&requests2[i]);
 								}
 							}
 						} // block_rank[k*nt+i] == rank
+
 					} // np > 1 && A[k][i]
 				}
-
 
 				for (size_t i = k + 1; i < nt; ++i) {
 					double (*ptr1)[ts] = (block_rank[k][i] == rank ? A[k][i] : C[i]);
@@ -385,7 +403,11 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 						omp_syrk(ts, ptr1, A[i][i]);
 					}
 				} // for i
+
+				#pragma omp taskwait
 			} // for k
+
+			free(requests2);
 		} // pragma omp single
 	} // pragma omp parallel
 }
@@ -451,7 +473,6 @@ int main(int argc, char *argv[])
 	timer atimer = create_timer("Algorithm_time");
 	cholesky_mpi(nt, TS, A, B, C, block_rank, &env);
 	MPI_Barrier(MPI_COMM_WORLD);
-
 	stop_timer(&atimer);
 	// ===========================================
 

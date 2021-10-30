@@ -74,6 +74,17 @@ typedef size_t inst_value_t;
 		_env->cpu_count = count_sched_cpus();
 		myassert(_env->cpu_count >= 0);
 
+		// It seems like OMP gets the maxthreads from the total number of CPU
+		// and ignored the count_sched_cpus. So for this benchmarks I prefer to
+		// set them manually and emit a warning. I also tried to manage this
+		// using the external variable OMP_NUM_THREADS, but something is missing
+		// and the variable does not take effect sometimes.
+		if (_env->maxthreads > _env->cpu_count) {
+			dbprintf("# Setting omp_set_num_threads because maxthreads=%zu and cpu_count=%zu\n",
+			         _env->maxthreads, _env->cpu_count);
+			omp_set_num_threads((int) _env->cpu_count);
+		}
+
 		_env->ts = ts;
 		myassert(_env->ts > 0);
 		modcheck(dim, _env->ts)

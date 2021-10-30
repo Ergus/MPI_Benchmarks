@@ -184,8 +184,10 @@ void oss_potrf(const size_t bsize, double A[bsize][bsize])
 }
 
 
-void oss_trsm(const size_t bsize, double A[bsize][bsize], double B[bsize][bsize])
-{
+void oss_trsm(const size_t bsize,
+              const double A[bsize][bsize],
+              double B[bsize][bsize]
+) {
 	cblas_dtrsm(
 		CblasColMajor,
 		CblasRight,

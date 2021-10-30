@@ -83,6 +83,8 @@ typedef size_t inst_value_t;
 			dbprintf("# Setting omp_set_num_threads because maxthreads=%zu and cpu_count=%zu\n",
 			         _env->maxthreads, _env->cpu_count);
 			omp_set_num_threads((int) _env->cpu_count);
+			// To assert that it worked.
+			_env->maxthreads = omp_get_max_threads();
 		}
 
 		_env->ts = ts;

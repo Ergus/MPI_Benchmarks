@@ -37,6 +37,9 @@ add_executable(${executable} cholesky_omp_mpi.c)
 target_link_options(${executable} PUBLIC ${BLAS_LINKER_FLAGS})
 target_link_libraries(${executable} ${BLAS_LIBRARIES} argparser)
 
+add_test(NAME "Test_${executable}"
+  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16 0)
+
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)

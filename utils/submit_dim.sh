@@ -11,13 +11,13 @@ source @PROJECT_BINARY_DIR@/argparse.sh
 
 # Arguments to use in this script
 add_argument -a R -l repeats -h "Repetitions per program" -t int
-add_argument -a W -l weakscaling -h "Do weak scaling (dim*sqrt(nodes))" -t int
+add_argument -a C -l cores -h "Number of cores per node" -t int
+add_argument -a N -l ntasks -h "number of tasks" -t int
 
 # Arguments for the executable
 add_argument -a D -l dim -h "Matrix dimension" -t int
 add_argument -a B -l BS -h "Blocksize" -t int
 add_argument -a I -l iterations -h "Program interations" -t int
-add_argument -a n -l ntasks -h "number of tasks" -t int
 
 # Parse input command line arguments
 parse_args "$@"
@@ -30,6 +30,7 @@ REPEATS=${ARGS[R]}
 ITS=${ARGS[I]}
 
 NTASTS=${ARGS[n]}
+CORES=${ARGS[C]}
 
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
@@ -53,7 +54,7 @@ if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
 fi
 
 for EXE in @TEST@_*; do
-	COMMAND="srun --ntasks=${NTASTS} ./${EXE} $DIM $BS $ITS"
+	COMMAND="srun --ntasks=${NTASTS} taskset -c 0-$((CORES - 1)) ./${EXE} $DIM $BS $ITS"
 
 	echo -e "# Starting command: ${COMMAND}"
 	echo "# ======================================"

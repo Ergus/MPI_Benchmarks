@@ -27,9 +27,15 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <libgen.h>  // basename
 #include <assert.h>
-#include "mpi.h"
+#include <unistd.h>
+#include <errno.h>
+
+#include <mpi.h>
+#include <omp.h>
 
 #include "cmacros/macros.h"
 #include "ArgParserC/argparser.h"

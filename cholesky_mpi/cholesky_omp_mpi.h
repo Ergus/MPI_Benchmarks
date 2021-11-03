@@ -144,16 +144,6 @@ static inline void omp_syrk(int ts, double A[ts][ts], double B[ts][ts])
 	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 
-static inline void wait(MPI_Request *comm_req)
-{
-	int comm_comp = 0;
-
-	do {
-		MPI_Test(comm_req, &comm_comp, MPI_STATUS_IGNORE);
-	} while (!comm_comp);
-}
-
-
 #ifdef __cplusplus
 }
 #endif

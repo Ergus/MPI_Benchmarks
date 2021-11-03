@@ -265,14 +265,14 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 									if (dst == block_rank[k][kk]) {
 										MPI_Isend(A[k][k], ts * ts, MPI_DOUBLE,
 										          dst, tag,
-										          MPI_COMM_WORLD, &reqs[nreqs++]);
+										          MPI_COMM_WORLD, &reqs[nreqs]);
+
+										MPI_Request_free(&reqs[nreqs]);
+										++nreqs;
 										break;
 									}
 								}
 							}
-							/* for (size_t i = 0; i < nreqs; ++i) { */
-							/* 	wait(&reqs[i]); */
-							/* } */
 						}
 					} else { // block_rank[k][k] != rank
 						for (size_t i = k + 1; i < nt; ++i) {
@@ -281,12 +281,13 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 								#pragma omp task depend(out: B[0]) \
 									firstprivate(k, tag) untied
 								{
-									MPI_Request request1;
-
-									MPI_Irecv(B, ts * ts, MPI_DOUBLE,
-									          block_rank[k][k], tag,
-									          MPI_COMM_WORLD, &request1);
-									wait(&request1);
+									// We use a blocking receive here as this is
+									// a single task per interation and all the
+									// other operation will block waiting for
+									// this element.
+									MPI_Recv(B, ts * ts, MPI_DOUBLE,
+									         block_rank[k][k], tag,
+									         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 								}
 
 								break;
@@ -334,7 +335,8 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 										MPI_Isend(A[k][i], ts * ts, MPI_DOUBLE,
 										          dst, tag,
 										          MPI_COMM_WORLD, &send_req);
-										// wait(&send_req);
+										// Mark the request for deletion as soon as it is finished
+										MPI_Request_free(&send_req);
 									}
 								}
 							}
@@ -377,7 +379,8 @@ void cholesky_mpi(const size_t nt, const size_t ts,
 									depend(inout: sentinel) \
 									firstprivate(i) untied
 								{
-									wait(&requests2[i]);
+									// Wait releases (free) the request before returning.
+									MPI_Wait(&requests2[i], MPI_STATUS_IGNORE);
 								}
 							}
 						} // block_rank[k*nt+i] == rank

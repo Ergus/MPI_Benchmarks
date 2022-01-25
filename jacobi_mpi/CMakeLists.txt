@@ -28,7 +28,13 @@ add_custom_command(
 
 add_library(base STATIC libbase.o)
 
-foreach(EXECUTABLE jacobi_omp_mpi jacobi_task_mpi jacobi_serial)
+foreach(SUFIX omp_mpi task_mpi serial)
+
+  if (SUFIX STREQUAL "serial") AND (NOT WITH_SERIAL))
+    continue()
+  endif ()
+
+  set(EXECUTABLE "${TEST}_${SUFIX}")
 
   message("- Add benchmark: ${EXECUTABLE}")
 

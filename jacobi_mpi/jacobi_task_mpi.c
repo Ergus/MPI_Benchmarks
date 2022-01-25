@@ -129,7 +129,7 @@ void jacobi(const double *A, const double *B,
 
 
 // A * xin + B = xout
-void jacobi_omp_task(const double *A, const double *B,
+void jacobi_task_mpi(const double *A, const double *B,
                      const double *xin, double *xout,
                      const envinfo *env, size_t it
 ) {
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		jacobi_omp_task(lA, B, x1, x2, &env, i);
+		jacobi_task_mpi(lA, B, x1, x2, &env, i);
 
 		if (env.worldsize > 0) {
 			MPI_Allgather(x2, env.ldim, MPI_DOUBLE,

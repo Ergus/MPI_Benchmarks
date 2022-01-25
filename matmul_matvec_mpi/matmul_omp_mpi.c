@@ -93,6 +93,7 @@ void matmul_omp(const double *A, const double *B, double * const C,
 		}
 	}
 }
+
 #endif // keep without final else so when not specified get a compilation error.
 
 int main(int argc, char **argv)

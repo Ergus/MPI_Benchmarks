@@ -87,9 +87,9 @@ void jacobi_modify_taskfor(double *A, double *B, const envinfo *env)
 
 
 // A * xin + B = xout
-void jacobi_omp_taskfor(const double *A, const double *B,
-                        const double *xin, double *xout,
-                        const envinfo *env, size_t it
+void jacobi_parallelfor_mpi(const double *A, const double *B,
+                            const double *xin, double *xout,
+                            const envinfo *env, size_t it
 ) {
 	if (it == 0) {
 		printf("# jacobi with parallel_for (node: %d)\n", env->rank);
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		jacobi_omp_taskfor(lA, B, x1, x2, &env, i);
+		jacobi_parallelfor_mpi(lA, B, x1, x2, &env, i);
 
 		if (env.worldsize > 0) {
 			MPI_Allgather(x2, env.ldim, MPI_DOUBLE,

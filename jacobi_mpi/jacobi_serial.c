@@ -15,9 +15,10 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "jacobi_omp_mpi.h"
+#include "benchmarks_mpi.h"
 
-extern void jacobi_base(
+
+void jacobi_base(
 	const double * __restrict__ A,
 	double Bi,
 	const double * __restrict__ xin,
@@ -25,66 +26,67 @@ extern void jacobi_base(
 );
 
 
-void init_AB_serial(double *A, double *B, const size_t dim)
+void init_AB_serial(double *A, double *B, const envinfo *env)
 {
-	for (size_t i = 0; i < dim; ++i) { // loop nodes
+	for (size_t i = 0; i < env->dim; ++i) { // loop nodes
 
 		struct drand48_data drand_buf;
 		srand48_r(i, &drand_buf);
 		double x;
 
 		double cum = 0.0, sum = 0.0;
-		for (size_t l = 0; l < dim; ++l) {
+		for (size_t l = 0; l < env->dim; ++l) {
 			drand48_r(&drand_buf, &x);
-			A[i * dim + l] = x;
+			A[i * env->dim + l] = x;
 			cum += fabs(x);
 			sum += x;
 		}
 		// Diagonal element condition.
-		const double valii = A[i * dim + i];
+		const double valii = A[i * env->dim + i];
 		if (signbit(valii)) {
-			A[i * dim + i] = valii - cum;
+			A[i * env->dim + i] = valii - cum;
 			B[i] = sum - cum;
 		} else {
-			A[i * dim + i] = valii + cum;
+			A[i * env->dim + i] = valii + cum;
 			B[i] = sum + cum;
 		}
 	}
 }
 
 
-void init_x_serial(double *x, const size_t dim, double val)
+void init_x_serial(double *x, const envinfo *env, const double val)
 {
-	for (size_t i = 0; i < dim; ++i) { // loop nodes
+	for (size_t i = 0; i < env->dim; ++i) { // loop nodes
 		x[i] = val;
 	}
 }
 
 
-void jacobi_modify_serial(double *A, double *b, size_t dim)
+void jacobi_modify_serial(double *A, double *b, const envinfo *env)
 {
-	for (size_t i = 0; i < dim; ++i) { // loop nodes
+	for (size_t i = 0; i < env->dim; ++i) { // loop nodes
 
-		const double Aii = fabs(A[i * dim + i]);
+		const double Aii = fabs(A[i * env->dim + i]);
 
-		for (size_t l = 0; l < dim; ++l) {
-			A[i * dim + l] = (l != i) ? (- A[i * dim + l] /  Aii) : 0;
+		for (size_t l = 0; l < env->dim; ++l) {
+			A[i * env->dim + l] = (l != i) ? (- A[i * env->dim + l] /  Aii) : 0;
 		}
 		b[i] /= Aii;
 	}
 }
 
 
-void jacobi_tasks_serial(const double *A, const double *B, double *xin, double *xout,
-                         size_t dim, size_t it
+void jacobi_tasks_serial(const double *A, const double *B,
+                         double *xin, double *xout,
+                         const envinfo *env, size_t it
 ) {
 	if (it == 0)
 		printf("# jacobi_tasks_serial\n");
 
-	for (size_t i = 0; i < dim; ++i) {
-		inst_event(9910002, dim);
+	for (size_t i = 0; i < env->dim; ++i) {
+		inst_event(9910002, env->dim);
 
-		jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
+		jacobi_base(&A[i * env->dim], B[i], xin, &xout[i], env->dim);
 
 		inst_event(9910002, 0);
 	}
@@ -108,10 +110,10 @@ int main(int argc, char* argv[])
 	double *x1 = malloc(ROWS * sizeof(double));
 	double *x2 = malloc(ROWS * sizeof(double));
 
-	init_AB_serial(A, B, ROWS);
-	jacobi_modify_serial(A, B, ROWS);
-	init_x_serial(x1, ROWS, 0.0);
-	init_x_serial(x2, ROWS, 0.0);
+	init_AB_serial(A, B, &env);
+	jacobi_modify_serial(A, B, &env);
+	init_x_serial(x1, &env, 0.0);
+	init_x_serial(x2, &env, 0.0);
 
 	printf("# Starting algorithm\n");
 	timer atimer = create_timer("Algorithm_time");
@@ -123,7 +125,7 @@ int main(int argc, char* argv[])
 		xin = (i % 2 == 0) ? x1 : x2;
 		xout = (i % 2 == 0) ? x2 : x1;
 
-		jacobi_tasks_serial(A, B, xin, xout, ROWS, i);
+		jacobi_tasks_serial(A, B, xin, xout, &env, i);
 	}
 
 	stop_timer(&atimer);

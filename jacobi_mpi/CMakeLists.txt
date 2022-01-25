@@ -28,9 +28,9 @@ add_custom_command(
 
 add_library(base STATIC libbase.o)
 
-foreach(SUFIX omp_mpi task_mpi serial)
+foreach(SUFIX parallelfor_mpi task_mpi serial)
 
-  if (SUFIX STREQUAL "serial") AND (NOT WITH_SERIAL))
+  if ((SUFIX STREQUAL "serial") AND (NOT WITH_SERIAL))
     continue()
   endif ()
 

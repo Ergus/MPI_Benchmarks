@@ -15,7 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "jacobi_omp_mpi.h"
+#include "benchmarks_mpi.h"
+
+
+void jacobi_base(
+	const double * __restrict__ A,
+	double Bi,
+	const double * __restrict__ xin,
+	double * __restrict__ xouti, size_t dim
+);
 
 
 void init_AB_taskfor(double *A, double *B, const envinfo *env)

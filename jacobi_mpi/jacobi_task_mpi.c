@@ -15,7 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "jacobi_omp_mpi.h"
+#include "benchmarks_mpi.h"
+
+void jacobi_base(
+	const double * __restrict__ A,
+	double Bi,
+	const double * __restrict__ xin,
+	double * __restrict__ xouti, size_t dim
+);
+
 
 void init_AB_task(double *A, double *B, const envinfo *env)
 {
@@ -88,7 +96,8 @@ void jacobi_modify_task(double *A, double *B, const envinfo *env)
 	{
 		for (size_t i = 0; i < env->ldim; i += env->ts) {
 
-			#pragma omp task depend(inout:A[i * dim]) depend(inout:B[first_row + i])
+			#pragma omp task depend(inout:A[i * dim]) \
+				depend(inout:B[first_row + i])
 			{
 				for (size_t j = i; j < i + env->ts; ++j) {
 					const size_t grow = first_row + j;
@@ -102,6 +111,19 @@ void jacobi_modify_task(double *A, double *B, const envinfo *env)
 				}
 			}
 		}
+	}
+}
+
+
+void jacobi(const double *A, const double *B,
+            const double *xin, double *xout, size_t ts, size_t dim
+) {
+	for (size_t i = 0; i < ts; ++i) {
+		inst_event(9910002, dim);
+
+		jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
+
+		inst_event(9910002, 0);
 	}
 }
 

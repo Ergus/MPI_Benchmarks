@@ -30,28 +30,29 @@ foreach (ISMATVEC 0;1)
   set (TASKTYPELIST parallelfor task)
   foreach (TASKTYPEID 0;1)
     list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPE)
-    set(executable "${TEST}_mpi_${TASKTYPE}")
-    add_executable(${executable} matmul_omp_mpi.c)
-    target_compile_definitions(${executable}
+
+    set(EXECUTABLE "${TEST}_${TASKTYPE}_mpi")
+    add_executable(${EXECUTABLE} matmul_omp_mpi.c)
+    target_compile_definitions(${EXECUTABLE}
       PUBLIC ISMATVEC=${ISMATVEC} TASKTYPE=${TASKTYPEID}
       )
-    target_link_libraries(${executable} argparser)
+    target_link_libraries(${EXECUTABLE} argparser)
 
-    add_test(NAME Test_${executable}
-      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
+    add_test(NAME Test_${EXECUTABLE}
+      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 256 16 1 1)
 
     # Create FIXTURES_SETUP for Test_${executable}
-    set_tests_properties(Test_${executable} PROPERTIES
+    set_tests_properties(Test_${EXECUTABLE} PROPERTIES
       ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
       FIXTURES_SETUP ST_${executable})
 
     # Add result test
     if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-      add_test(NAME Test_${executable}_results
+      add_test(NAME Test_${EXECUTABLE}_results
 	COMMAND ${Python_EXECUTABLE} validate.py
-	${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
-      set_tests_properties(Test_${executable}_results PROPERTIES
-	FIXTURES_REQUIRED ST_${executable})
+	${EXECUTABLE}_A.mat ${EXECUTABLE}_B.mat ${EXECUTABLE}_C.mat)
+      set_tests_properties(Test_${EXECUTABLE}_results PROPERTIES
+	FIXTURES_REQUIRED ST_${EXECUTABLE})
     endif () # Python_FOUND
   endforeach()
 

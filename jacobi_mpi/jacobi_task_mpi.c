@@ -114,20 +114,6 @@ void jacobi_modify_task(double *A, double *B, const envinfo *env)
 	}
 }
 
-
-void jacobi(const double *A, const double *B,
-            const double *xin, double *xout, size_t ts, size_t dim
-) {
-	for (size_t i = 0; i < ts; ++i) {
-		inst_event(9910002, dim);
-
-		jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
-
-		inst_event(9910002, 0);
-	}
-}
-
-
 // A * xin + B = xout
 void jacobi_task_mpi(const double *A, const double *B,
                      const double *xin, double *xout,
@@ -145,11 +131,19 @@ void jacobi_task_mpi(const double *A, const double *B,
 	{
 		for (size_t i = 0; i < env->ldim; i += env->ts) {
 
-			#pragma omp task depend(in:A[i * dim]) \
-				depend(in:xin[0])				   \
-				depend(in:B[i])					   \
+			#pragma omp task depend(in:A[i * dim])			   \
+				depend(in:xin[0])							   \
+				depend(in:B[first_row + i])					   \
 				depend(out:xout[i])
-			jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], env->ts, dim);
+			{
+				for (size_t j = i; j < i + env->ts; ++j) {
+					inst_event(9910002, env->dim);
+
+					jacobi_base(&A[j * dim], B[first_row + j], xin, &xout[j], env->dim);
+
+					inst_event(9910002, 0);
+				}
+			}
 		}
 	}
 }

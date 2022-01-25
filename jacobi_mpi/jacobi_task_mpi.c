@@ -23,6 +23,7 @@ void init_AB_task(double *A, double *B, const envinfo *env)
 	const size_t dim = env->dim;
 
 	#pragma omp parallel
+	#pragma omp single
 	{
 		for (size_t i = 0; i < env->ldim; i += env->ts) { // loop tasks
 
@@ -62,6 +63,7 @@ void init_x_task(
 	const envinfo *env
 ) {
 	#pragma omp parallel
+	#pragma omp single
 	{
 		for (size_t i = 0; i < dim; i += env->ts) { // loop nodes
 
@@ -82,6 +84,7 @@ void jacobi_modify_task(double *A, double *B, const envinfo *env)
 	const size_t dim = env->dim;
 
 	#pragma omp parallel
+	#pragma omp single
 	{
 		for (size_t i = 0; i < env->ldim; i += env->ts) {
 

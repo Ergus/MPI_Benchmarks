@@ -1,4 +1,4 @@
-# Copyright (C) 2021  Jimmy Aguilar Mena
+# Copyright (C) 2021-2022  Jimmy Aguilar Mena
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ project(mpi_benchmarks)
 
 option(WITH_ASAN "Build tests with address sanitizer" false)
 option(WITH_EXTRAE "Build with Extrae traces support" false)
-option(WITH_SERIAL "Build serial version of the code when available." false)
+option(WITH_SERIAL "Build serial version of the code." false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,7 +45,6 @@ if (WITH_ASAN)
 
   set (CMAKE_EXE_LINKER_FLAGS
     "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
-
 endif ()
 
 # Enable Extrae
@@ -56,6 +55,10 @@ if (WITH_EXTRAE)
     include_directories(${EXTRAE_INCLUDES})
     link_libraries(${EXTRAE_LIBRARIES})
   endif ()
+endif()
+
+if (CMAKE_BUILD_TYPE MATCHES ".*Debug.*")
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
 find_package(MPI REQUIRED)

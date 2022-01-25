@@ -108,8 +108,13 @@ void jacobi_modify_task(double *A, double *B, const envinfo *env)
 
 // A * xin + B = xout
 void jacobi_omp_task(const double *A, const double *B,
-                     const double *xin, double *xout, const envinfo *env
+                     const double *xin, double *xout,
+                     const envinfo *env, size_t it
 ) {
+	if (it == 0) {
+		printf("# jacobi with tasks (node: %d)\n", env->rank);
+	}
+
 	const size_t first_row = env->ldim * env->rank;
 	const size_t dim = env->dim;
 
@@ -168,16 +173,20 @@ int main(int argc, char **argv)
 
 	timer atimer = create_timer("Algorithm_time");
 
-	// Gather B to all
-	MPI_Allgather(MPI_IN_PLACE, env.ldim, MPI_DOUBLE,
-	              B, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
+	if (env.worldsize > 0) {
+		// Gather B to all
+		MPI_Allgather(MPI_IN_PLACE, env.ldim, MPI_DOUBLE,
+		              B, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
+	}
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		jacobi_omp_task(lA, B, x1, x2, &env);
+		jacobi_omp_task(lA, B, x1, x2, &env, i);
 
-		MPI_Allgather(x2, env.ldim, MPI_DOUBLE,
-		              x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
+		if (env.worldsize > 0) {
+			MPI_Allgather(x2, env.ldim, MPI_DOUBLE,
+			              x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
+		}
 	}
 
 	stop_timer(&atimer);

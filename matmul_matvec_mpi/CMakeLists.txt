@@ -27,26 +27,33 @@ set (TESTLIST matmul matvec)
 foreach (ISMATVEC 0;1)
   list(GET TESTLIST ${ISMATVEC} TEST)
 
-  set(executable "${TEST}_omp_mpi")
-  add_executable(${executable} matmul_omp_mpi.c)
-  target_compile_definitions(${executable} PUBLIC -DISMATVEC=${ISMATVEC})
-  target_link_libraries(${executable} argparser)
+  set (TASKTYPELIST parallelfor task)
+  foreach (TASKTYPEID 0;1)
+    list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPE)
+    set(executable "${TEST}_mpi_${TASKTYPE}")
+    add_executable(${executable} matmul_omp_mpi.c)
+    target_compile_definitions(${executable}
+      PUBLIC ISMATVEC=${ISMATVEC} TASKTYPE=${TASKTYPEID}
+      )
+    target_link_libraries(${executable} argparser)
 
-  add_test(NAME Test_${executable}
-    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
-  # Create FIXTURES_SETUP for Test_${executable}
-  set_tests_properties(Test_${executable} PROPERTIES
-    ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
-    FIXTURES_SETUP ST_${executable})
+    add_test(NAME Test_${executable}
+      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 256 16 1 1)
 
-  # Add result test
-  if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-    add_test(NAME Test_${executable}_results
-      COMMAND ${Python_EXECUTABLE} validate.py
-      ${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
-    set_tests_properties(Test_${executable}_results PROPERTIES
-      FIXTURES_REQUIRED ST_${executable})
-  endif () # Python_FOUND
+    # Create FIXTURES_SETUP for Test_${executable}
+    set_tests_properties(Test_${executable} PROPERTIES
+      ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
+      FIXTURES_SETUP ST_${executable})
+
+    # Add result test
+    if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
+      add_test(NAME Test_${executable}_results
+	COMMAND ${Python_EXECUTABLE} validate.py
+	${executable}_A.mat ${executable}_B.mat ${executable}_C.mat)
+      set_tests_properties(Test_${executable}_results PROPERTIES
+	FIXTURES_REQUIRED ST_${executable})
+    endif () # Python_FOUND
+  endforeach()
 
   configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)
   configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_${TEST}_dim.sh @ONLY)

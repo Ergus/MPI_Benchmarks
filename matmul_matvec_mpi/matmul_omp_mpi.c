@@ -37,23 +37,63 @@ void matrix_init(double * const __restrict__ array,
 }
 
 
+#if TASKTYPE == 0 // parallel for
+
 void matmul_omp(const double *A, const double *B, double * const C,
-                size_t lrowsA, size_t dim, size_t colsBC)
-{
+                const envinfo *env, size_t colsBC, size_t it
+) {
+	if (it == 0) {
+		printf("# %s with parallel_for (node: %d)\n",
+		       (ISMATVEC ? "matvec" : "matmul"), env->rank);
+	}
+
 	#pragma omp parallel for
-	for (size_t i = 0; i < lrowsA; ++i) {
+	for (size_t i = 0; i < env->ldim; ++i) {
 		for (size_t k = 0; k < colsBC; ++k)
 			C[i * colsBC + k] = 0.0;
 
-		for (size_t j = 0; j < dim; ++j) {
-			const double temp = A[i * dim + j];
+		for (size_t j = 0; j < env->dim; ++j) {
 
 			for (size_t k = 0; k < colsBC; ++k) {
-				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+				C[i * colsBC + k] += (A[i * env->dim + j] * B[j * colsBC + k]);
 			}
 		}
 	}
 }
+
+#elif TASKTYPE == 1 // task
+
+void matmul_omp(const double *A, const double *B, double * const C,
+                const envinfo *env, size_t colsBC, size_t it
+) {
+	if (it == 0) {
+		printf("# %s with tasks (node: %d)\n",
+		       (ISMATVEC ? "matvec" : "matmul"), env->rank);
+	}
+
+	#pragma omp parallel
+	#pragma omp single
+	{
+		for (size_t l = 0; l < env->ldim; l += env->ts) {
+			#pragma omp task
+			{
+				for (size_t i = l; i < l + env->ts; ++i) {
+
+					for (size_t k = 0; k < colsBC; ++k)
+						C[i * colsBC + k] = 0.0;
+
+					for (size_t j = 0; j < env->dim; ++j) {
+
+						for (size_t k = 0; k < colsBC; ++k) {
+							C[i * colsBC + k] += (A[i * env->dim + j] * B[j * colsBC + k]);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+#endif // keep without final else so when not specified get a compilation error.
 
 int main(int argc, char **argv)
 {
@@ -105,7 +145,7 @@ int main(int argc, char **argv)
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		matmul_omp(lA, B, lC, env.ldim, env.dim, colsBC);
+		matmul_omp(lA, B, lC, &env, colsBC, i);
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);

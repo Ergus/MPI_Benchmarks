@@ -39,7 +39,7 @@ void matrix_init(double * const __restrict__ array,
 
 #if TASKTYPE == 0 // parallel for
 
-void matmul_omp(const double *A, const double *B, double * const C,
+void matmul_mpi(const double *A, const double *B, double * const C,
                 const envinfo *env, size_t colsBC, size_t it
 ) {
 	if (it == 0) {
@@ -53,9 +53,10 @@ void matmul_omp(const double *A, const double *B, double * const C,
 			C[i * colsBC + k] = 0.0;
 
 		for (size_t j = 0; j < env->dim; ++j) {
+			const double tmp = A[i * env->dim + j];
 
 			for (size_t k = 0; k < colsBC; ++k) {
-				C[i * colsBC + k] += (A[i * env->dim + j] * B[j * colsBC + k]);
+				C[i * colsBC + k] += (tmp * B[j * colsBC + k]);
 			}
 		}
 	}
@@ -63,7 +64,7 @@ void matmul_omp(const double *A, const double *B, double * const C,
 
 #elif TASKTYPE == 1 // task
 
-void matmul_omp(const double *A, const double *B, double * const C,
+void matmul_mpi(const double *A, const double *B, double * const C,
                 const envinfo *env, size_t colsBC, size_t it
 ) {
 	if (it == 0) {
@@ -146,7 +147,7 @@ int main(int argc, char **argv)
 
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		matmul_omp(lA, B, lC, &env, colsBC, i);
+		matmul_mpi(lA, B, lC, &env, colsBC, i);
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);

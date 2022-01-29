@@ -17,6 +17,46 @@
 
 #include "benchmarks_mpi.h"
 
+#if ISMATVEC
+void matmul_base(const double *A, const double *B, double * const C,
+                 size_t ts, size_t dim, size_t colsBC
+) {
+	(void) colsBC;
+	inst_event(9910002, dim);
+
+	for (size_t i = 0; i < ts; ++i) {
+		C[i] = 0.0;
+
+		for (size_t j = 0; j < dim; ++j) {
+			C[i] += A[i * dim + j] * B[j];
+		}
+	}
+
+	inst_event(9910002, 0);
+}
+#else
+void matmul_base(const double *A, const double *B, double * const C,
+                 size_t ts, size_t dim, size_t colsBC
+) {
+	for (size_t i = 0; i < ts; ++i) {
+		for (size_t k = 0; k < colsBC; ++k)
+			C[i * colsBC + k] = 0.0;
+
+		inst_event(9910002, dim);
+		for (size_t j = 0; j < dim; ++j) {
+			const double temp = A[i * dim + j];
+
+			for (size_t k = 0; k < colsBC; ++k) {
+				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+			}
+		}
+		inst_event(9910002, 0);
+	}
+}
+#endif
+
+
+
 void matrix_init(double * const __restrict__ array,
                  const size_t rows, const size_t cols, int seed
 ) {
@@ -49,16 +89,7 @@ void matmul_mpi(const double *A, const double *B, double * const C,
 
 	#pragma omp parallel for
 	for (size_t i = 0; i < env->ldim; ++i) {
-		for (size_t k = 0; k < colsBC; ++k)
-			C[i * colsBC + k] = 0.0;
-
-		for (size_t j = 0; j < env->dim; ++j) {
-			const double tmp = A[i * env->dim + j];
-
-			for (size_t k = 0; k < colsBC; ++k) {
-				C[i * colsBC + k] += (tmp * B[j * colsBC + k]);
-			}
-		}
+		matmul_base(&A[i * env->dim], B, &C[i * colsBC], 1, env->dim, colsBC);
 	}
 }
 
@@ -72,25 +103,14 @@ void matmul_mpi(const double *A, const double *B, double * const C,
 		       (ISMATVEC ? "matvec" : "matmul"), env->rank);
 	}
 
+	const size_t dim = env->dim;
+
 	#pragma omp parallel
 	#pragma omp single
 	{
 		for (size_t l = 0; l < env->ldim; l += env->ts) {
 			#pragma omp task
-			{
-				for (size_t i = l; i < l + env->ts; ++i) {
-
-					for (size_t k = 0; k < colsBC; ++k)
-						C[i * colsBC + k] = 0.0;
-
-					for (size_t j = 0; j < env->dim; ++j) {
-
-						for (size_t k = 0; k < colsBC; ++k) {
-							C[i * colsBC + k] += (A[i * env->dim + j] * B[j * colsBC + k]);
-						}
-					}
-				}
-			}
+			matmul_base(&A[l * dim], B, &C[l * colsBC], env->ts, dim, colsBC);
 		}
 	}
 }

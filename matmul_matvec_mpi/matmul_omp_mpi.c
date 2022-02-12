@@ -21,37 +21,65 @@
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
-	(void) colsBC;
-	inst_event(9910002, dim);
+	inst_event(BLAS_EVENT, BLAS_DGEMM);
 
-	for (size_t i = 0; i < ts; ++i) {
-		C[i] = 0.0;
+	myassert(dim < (size_t) INT_MAX);
 
-		for (size_t j = 0; j < dim; ++j) {
-			C[i] += A[i * dim + j] * B[j];
-		}
-	}
+	const char TR = 'T';
+	const int M = (int) dim;
+	const int N = (int) ts;
+	const double alpha = 1.0;
+	const double beta = 0.0;
+	const int incx = 1;
 
-	inst_event(9910002, 0);
+	dgemv_(&TR, &M, &N, &alpha, A, &M, B, &incx, &beta, C, &incx);
+
+	// for (size_t i = 0; i < ts; ++i) {
+	// 	C[i] = 0.0;
+
+	// 	for (size_t j = 0; j < dim; ++j) {
+	// 		C[i] += A[i * dim + j] * B[j];
+	// 	}
+	// }
+
+	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 #else
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
-	for (size_t i = 0; i < ts; ++i) {
-		for (size_t k = 0; k < colsBC; ++k)
-			C[i * colsBC + k] = 0.0;
+	inst_event(BLAS_EVENT, BLAS_DGEMM);
 
-		inst_event(9910002, dim);
-		for (size_t j = 0; j < dim; ++j) {
-			const double temp = A[i * dim + j];
+	const char TA = 'N';
+	const char TB = 'N';
+	const int M = (int) dim;
+	const int N = (int) ts;
+	const int K = (int) colsBC;
+	const double ALPHA = 1.0;
+	const int LDA = M;
+	const int LDB = K;
+	const double BETA = 0.0;
+	const int LDC = M;
 
-			for (size_t k = 0; k < colsBC; ++k) {
-				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
-			}
-		}
-		inst_event(9910002, 0);
-	}
+	dgemm_(&TA, &TB, &M, &N, &K, &ALPHA,
+	       B, &LDB,
+	       A, &LDA, &BETA,
+	       C, &LDC);
+
+	// for (size_t i = 0; i < ts; ++i) {
+	// 	for (size_t k = 0; k < colsBC; ++k)
+	// 		C[i * colsBC + k] = 0.0;
+
+	// 	for (size_t j = 0; j < dim; ++j) {
+	// 		const double temp = A[i * dim + j];
+
+	// 		for (size_t k = 0; k < colsBC; ++k) {
+	// 			C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+	// 		}
+	// 	}
+	// }
+
+	inst_event(BLAS_EVENT, BLAS_NONE);
 }
 #endif
 

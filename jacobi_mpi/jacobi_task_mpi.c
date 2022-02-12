@@ -15,14 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "benchmarks_mpi.h"
-
-void jacobi_base(
-	const double * __restrict__ A,
-	double Bi,
-	const double * __restrict__ xin,
-	double * __restrict__ xouti, size_t dim
-);
+#include "jacobi_mpi.h"
 
 
 void init_AB_task(double *A, double *B, const envinfo *env)
@@ -136,13 +129,7 @@ void jacobi_task_mpi(const double *A, const double *B,
 				depend(in:B[first_row + i])					   \
 				depend(out:xout[i])
 			{
-				for (size_t j = i; j < i + env->ts; ++j) {
-					inst_event(9910002, env->dim);
-
-					jacobi_base(&A[j * dim], B[first_row + j], xin, &xout[j], env->dim);
-
-					inst_event(9910002, 0);
-				}
+				jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], env->ts, env->dim);
 			}
 		}
 	}

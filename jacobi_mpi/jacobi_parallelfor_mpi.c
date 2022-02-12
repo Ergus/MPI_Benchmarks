@@ -15,16 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "benchmarks_mpi.h"
-
-
-void jacobi_base(
-	const double * __restrict__ A,
-	double Bi,
-	const double * __restrict__ xin,
-	double * __restrict__ xouti, size_t dim
-);
-
+#include "jacobi_mpi.h"
 
 void init_AB_taskfor(double *A, double *B, const envinfo *env)
 {
@@ -99,11 +90,7 @@ void jacobi_parallelfor_mpi(const double *A, const double *B,
 
 	#pragma omp parallel for
 	for (size_t i = 0; i < env->ldim; ++i) {
-		inst_event(9910002, env->dim);
-
-		jacobi_base(&A[i * env->dim], B[first_row + i], xin, &xout[i], env->dim);
-
-		inst_event(9910002, 0);
+		jacobi(&A[i * env->dim], &B[first_row + i], xin, &xout[i], 1, env->dim);
 	}
 }
 

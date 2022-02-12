@@ -18,14 +18,6 @@
 
 set(TEST "cholesky")
 
-set(BLA_VENDOR Intel10_64lp_seq)
-find_package(BLAS REQUIRED)
-
-find_path(
-  MKL_INCLUDE_DIR mkl.h
-  HINTS ENV MKLROOT
-  PATH_SUFFIXES include)
-
 # Add the executables and link
 include_directories(${MKL_INCLUDE_DIR})
 
@@ -34,8 +26,6 @@ set(executable "cholesky_omp_mpi")
 message("- Add benchmark: ${EXECUTABLE}")
 
 add_executable(${executable} cholesky_omp_mpi.c)
-target_link_options(${executable} PUBLIC ${BLAS_LINKER_FLAGS})
-target_link_libraries(${executable} ${BLAS_LIBRARIES} argparser)
 
 add_test(NAME "Test_${executable}"
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16 0)

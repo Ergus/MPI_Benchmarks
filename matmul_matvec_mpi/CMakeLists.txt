@@ -36,7 +36,6 @@ foreach (ISMATVEC 0;1)
     target_compile_definitions(${EXECUTABLE}
       PUBLIC ISMATVEC=${ISMATVEC} TASKTYPE=${TASKTYPEID}
       )
-    target_link_libraries(${EXECUTABLE} argparser)
 
     add_test(NAME Test_${EXECUTABLE}
       COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 256 16 1 1)

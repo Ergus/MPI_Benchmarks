@@ -40,7 +40,7 @@ foreach(SUFIX parallelfor_mpi task_mpi serial)
 
   # jacobi with parallel for
   add_executable(${EXECUTABLE} "${EXECUTABLE}.c")
-  target_link_libraries(${EXECUTABLE} argparser base)
+  target_link_libraries(${EXECUTABLE} base)
 
   add_test(NAME "Test_${EXECUTABLE}"
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)

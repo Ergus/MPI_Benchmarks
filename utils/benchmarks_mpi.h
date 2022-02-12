@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BENCHMARKS_MPI
-#define BENCHMARKS_MPI
+#ifndef BENCHMARKS_MPI_H
+#define BENCHMARKS_MPI_H
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -39,22 +39,6 @@ extern "C" {
 
 #include "cmacros/macros.h"
 #include "ArgParserC/argparser.h"
-
-// Define extrae if macro is set.
-#if __WITH_EXTRAE
-#include "extrae_user_events.h"
-
-typedef extrae_type_t inst_type_t;
-typedef extrae_value_t inst_value_t;
-#define inst_define_event_type(type,name,nvalues,values,descriptions) \
-	Extrae_define_event_type(type,name,nvalues,values,descriptions)
-#define inst_event(evt, val) Extrae_event(evt, val)
-#else // __WITH_EXTRAE
-typedef size_t inst_type_t;
-typedef size_t inst_value_t;
-#define inst_define_event_type(type,name,nvalues,values,descriptions)
-#define inst_event(evt, val)
-#endif // __WITH_EXTRAE
 
 	typedef struct {
 		int rank, worldsize;
@@ -114,8 +98,98 @@ typedef size_t inst_value_t;
 		MPI_Finalize();
 	}
 
+
+	// Declare some blas routines.
+	#include <mkl.h>
+	#include <limits.h>
+
+	void dcopy_(const int *n, const double *dx, const int *incx, double *dy, const int *incy);
+
+	void dgemv_ (const char *trans, const int *m, const int *n,
+	             const double *alpha, const double *A, const int *lda,
+	             const double *x, const int *incx,
+	             const double *beta, double *y, const int *incy);
+
+	void dgemm_(const char *transa, const char *transb,
+	            const int *l, const int *n, const int *m,
+	            const double *alpha, const void *a, const int *lda,
+	            const void *b, const int *ldb,
+	            const double *beta, void *c, const int *ldc);
+
+	void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
+	            double *alpha, double *a, int *lda, double *b, int *ldb);
+
+	void dsyrk_(char *uplo, char *trans, int *n, int *k,
+	            double *alpha, double *a, int *lda,
+	            double *beta, double *c, int *ldc);
+
+#if __WITH_EXTRAE // #####################
+
+#include <extrae.h>
+#include "extrae_user_events.h"
+
+	typedef extrae_type_t inst_type_t;
+	typedef extrae_value_t inst_value_t;
+
+#define inst_define_event_type(type,name,nvalues,values,descriptions) \
+	Extrae_define_event_type(type,name,nvalues,values,descriptions)
+#define inst_event(evt, val) Extrae_event(evt, val)
+
+
+#define BLAS_EVENT 9910003
+
+#define BLAS_EVENT_VALUES						\
+	EVENT(BLAS_NONE)							\
+	EVENT(BLAS_POTRF)							\
+	EVENT(BLAS_TRSM)							\
+	EVENT(BLAS_GEMM)							\
+	EVENT(BLAS_GEMV)							\
+	EVENT(BLAS_COPY)							\
+	EVENT(BLAS_SYRK)
+
+	enum blas_values_t {
+		#define EVENT(evt) evt,
+		BLAS_EVENT_VALUES
+		#undef EVENT
+		BLAS_NEVENTS
+	};
+
+	void register_blas_events()
+	{
+		extrae_type_t event = BLAS_EVENT;
+
+		unsigned nvalues = BLAS_NEVENTS;
+
+		static extrae_value_t blas_values[BLAS_NEVENTS] = {
+			#define EVENT(evt) (extrae_value_t) evt,
+			BLAS_EVENT_VALUES
+			#undef EVENT
+		};
+
+		static char *blas_names[BLAS_NEVENTS] = {
+			#define EVENT(evt) #evt,
+			BLAS_EVENT_VALUES
+			#undef EVENT
+		};
+
+		inst_define_event_type(&event, "blas_event", &nvalues, blas_values, blas_names);
+	}
+
+#else // __WITH_EXTRAE // #####################
+
+	typedef size_t inst_type_t;
+	typedef size_t inst_value_t;
+
+#define inst_define_event_type(type,name,nvalues,values,descriptions)
+#define inst_event(evt, val)
+
+#define BLAS_EVENT 0
+#define register_blas_events()
+
+#endif // __WITH_EXTRAE // #####################
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif				// BENCHMARKS_MPI
+#endif // BENCHMARKS_MPI_H

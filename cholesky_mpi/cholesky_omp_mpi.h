@@ -26,62 +26,6 @@ extern "C" {
 
 #include "benchmarks_mpi.h"
 
-#if __WITH_EXTRAE
-
-#define BLAS_EVENT 9910003
-
-#define BLAS_EVENT_VALUES						\
-	EVENT(BLAS_NONE)							\
-	EVENT(BLAS_POTRF)							\
-	EVENT(BLAS_TRSM)							\
-	EVENT(BLAS_GEMM)							\
-	EVENT(BLAS_SYRK)
-
-enum blas_values_t {
-#define EVENT(evt) evt,
-	BLAS_EVENT_VALUES
-#undef EVENT
-	BLAS_NEVENTS
-};
-
-void register_blas_events()
-{
-	extrae_type_t event = BLAS_EVENT;
-
-	unsigned nvalues = BLAS_NEVENTS;
-
-	static extrae_value_t blas_values[BLAS_NEVENTS] = {
-#define EVENT(evt) (extrae_value_t) evt,
-		BLAS_EVENT_VALUES
-#undef EVENT
-	};
-
-	static char *blas_names[BLAS_NEVENTS] = {
-#define EVENT(evt) #evt,
-		BLAS_EVENT_VALUES
-#undef EVENT
-	};
-
-	inst_define_event_type(&event, "blas_event", &nvalues, blas_values, blas_names);
-}
-
-#else // __WITH_EXTRAE
-
-#define BLAS_EVENT 0
-#define register_blas_events()
-
-#endif // __WITH_EXTRAE
-
-void dgemm_(const char *transa, const char *transb, int *l, int *n, int *m, double *alpha,
-	const void *a, int *lda, void *b, int *ldb, double *beta, void *c, int *ldc);
-
-void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n, double *alpha,
-	double *a, int *lda, double *b, int *ldb);
-
-void dsyrk_(char *uplo, char *trans, int *n, int *k, double *alpha, double *a, int *lda,
-	double *beta, double *c, int *ldc);
-
-
 static inline void omp_potrf(int ts, double A[ts][ts])
 {
 	inst_event(BLAS_EVENT, BLAS_POTRF);

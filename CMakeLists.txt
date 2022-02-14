@@ -70,6 +70,7 @@ link_libraries(OpenMP::OpenMP_C)
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
 find_package(INTEL REQUIRED)
+add_compile_options(-diag-disable=858)
 
 # Blas - MKL
 set(BLA_VENDOR Intel10_64lp_seq)

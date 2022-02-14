@@ -28,7 +28,7 @@ void init_AB_task(double *A, double *B, const envinfo *env)
 	{
 		for (size_t i = 0; i < env->ldim; i += env->ts) { // loop tasks
 
-			#pragma omp task depend(out:A[i * dim]) depend(out:B[first_row + i])
+			#pragma omp task depend(out:A[i * dim]) depend(out:B[i])
 			for (size_t j = i; j < i + env->ts; ++j) {
 				const size_t grow = first_row + j;
 
@@ -44,12 +44,12 @@ void init_AB_task(double *A, double *B, const envinfo *env)
 				}
 				// Diagonal element condition.
 				const double valii = A[j * dim + grow];
-				if (signbit(valii)) {
+				if (valii < 0.0) {
 					A[j * dim + grow] = valii - cum;
-					B[grow] = sum - cum;
+					B[j] = sum - cum;
 				} else {
 					A[j * dim + grow] = valii + cum;
-					B[grow] = sum + cum;
+					B[j] = sum + cum;
 				}
 			}
 		}
@@ -89,8 +89,7 @@ void jacobi_modify_task(double *A, double *B, const envinfo *env)
 	{
 		for (size_t i = 0; i < env->ldim; i += env->ts) {
 
-			#pragma omp task depend(inout:A[i * dim]) \
-				depend(inout:B[first_row + i])
+			#pragma omp task depend(inout:A[i * dim]) depend(inout:B[i])
 			{
 				for (size_t j = i; j < i + env->ts; ++j) {
 					const size_t grow = first_row + j;
@@ -98,9 +97,9 @@ void jacobi_modify_task(double *A, double *B, const envinfo *env)
 
 					for (size_t k = 0; k < dim; ++k) {
 						A[j * dim + k]
-							= (grow == k) ? 0.0 : -1.0 * A[j * dim + k] * iAjj;
+							= (grow == k) ? 0.0 : (-1.0 * A[j * dim + k] * iAjj);
 					}
-					B[grow] *= iAjj;
+					B[j] *= iAjj;
 				}
 			}
 		}
@@ -116,20 +115,21 @@ void jacobi_task_mpi(const double *A, const double *B,
 		printf("# jacobi with tasks (node: %d)\n", env->rank);
 	}
 
-	const size_t first_row = env->ldim * env->rank;
 	const size_t dim = env->dim;
+	const size_t ldim = env->ldim;
+	const size_t ts = env->ts;
 
 	#pragma omp parallel
 	#pragma omp single
 	{
-		for (size_t i = 0; i < env->ldim; i += env->ts) {
+		for (size_t i = 0; i < ldim; i += ts) {
 
 			#pragma omp task depend(in:A[i * dim])			   \
 				depend(in:xin[0])							   \
-				depend(in:B[first_row + i])					   \
+				depend(in:B[i])								   \
 				depend(out:xout[i])
 			{
-				jacobi(&A[i * dim], &B[first_row + i], xin, &xout[i], env->ts, env->dim);
+				jacobi(&A[i * dim], &B[i], xin, &xout[i], ts, dim);
 			}
 		}
 	}
@@ -154,20 +154,15 @@ int main(int argc, char **argv)
 	timer ttimer = create_timer("Total_time");
 
 	// Allocate memory
-	const size_t rowsA = (env.printerA == env.rank ? env.dim : env.ldim);
-	double *A = (double *) malloc(rowsA * env.dim * sizeof(double));
-	double *const lA = (env.printerA == env.rank
-	                    ? &A[env.rank * env.ldim * env.dim] : A);
-
-	double *B = (double *) malloc(env.dim * sizeof(double));
-	double *x1 = (double *) malloc(env.dim * sizeof(double));
-	double *x2 = (double *) malloc(env.ldim * sizeof(double));
+	double *A = (double *) malloc(env.ldim * env.dim * sizeof(double));
+	double *B = (double *) malloc(env.ldim * sizeof(double));
+	double *lx = (double *) malloc(env.ldim * sizeof(double));
+	double *gx = (double *) malloc(env.dim * sizeof(double));  // Init in a gather
 
 	// Initialize arrays local portions
-	init_AB_task(lA, B, &env);
-	jacobi_modify_task(lA, B, &env);
-	init_x_task(x1, env.dim, 0, &env);
-	init_x_task(x2, env.ldim, 0, &env);
+	init_AB_task(A, B, &env);
+	jacobi_modify_task(A, B, &env);
+	init_x_task(lx, env.ldim, 0, &env);
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -176,21 +171,15 @@ int main(int argc, char **argv)
 
 	timer atimer = create_timer("Algorithm_time");
 
-	if (env.worldsize > 0) {
-		// Gather B to all
-		MPI_Allgather(MPI_IN_PLACE, env.ldim, MPI_DOUBLE,
-		              B, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
-	}
-
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
-		jacobi_task_mpi(lA, B, x1, x2, &env, i);
+		jacobi_Allgather(lx, env.ldim, MPI_DOUBLE,
+		                 gx, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
 
-		// Gather x to all
-		jacobi_Allgather(x2, env.ldim, MPI_DOUBLE,
-		                 x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
+		jacobi_task_mpi(A, B, gx, lx, &env, i);
 	}
 
+	MPI_Barrier(MPI_COMM_WORLD);
 	stop_timer(&atimer);
 	// ===========================================
 
@@ -205,40 +194,20 @@ int main(int argc, char **argv)
 	}
 
 	if (PRINT) {
-		// Gather C to ITS printer
-		printf("# Call C Gather in process: %d\n", env.rank);
-		if (env.printerC == env.rank) {
-			printmatrix(x1, env.dim, 1, PREFIX);
-		}
+		printmatrix_mpi(A, env.ldim, env.dim, PREFIX, &env);
+		printmatrix_mpi(B, env.ldim, 1, PREFIX, &env);
 
-		// Gather A to its printer
-		printf("# Call A Gather in process: %d\n", env.rank);
-		if (env.printerA == env.rank) {
-			MPI_Gather(MPI_IN_PLACE, env.ldim * env.dim, MPI_DOUBLE,
-			           A, env.ldim * env.dim, MPI_DOUBLE,
-			           env.printerA, MPI_COMM_WORLD);
-
-			printf("# Print A in process: %d\n",env.rank);
-			printmatrix(A, env.dim, env.dim, PREFIX);
-		} else {
-			MPI_Gather(A, env.ldim * env.dim, MPI_DOUBLE,
-			           NULL, env.ldim * env.dim, MPI_DOUBLE,
-			           env.printerA, MPI_COMM_WORLD);
-		}
-
-		if (env.printerB == env.rank) {
-			printf("# Print B in process: %d\n", env.rank);
-			printmatrix(B, env.dim, 1, PREFIX);
-		}
+		double *x = lx;
+		printmatrix_mpi(x, env.ldim, 1, PREFIX, &env);
 
 		MPI_Barrier(MPI_COMM_WORLD);
-		if (env.rank) {
+		if (env.rank == 0) {
 			printf("# Done printing results...\n");
 		}
 	}
 
-	free(x2);
-	free(x1);
+	free(lx);
+	free(gx);
 	free(B);
 	free(A);
 	free_args();

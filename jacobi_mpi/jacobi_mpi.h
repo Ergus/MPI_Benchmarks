@@ -68,10 +68,11 @@ extern "C" {
 	) {
 		dbprintf("# Call %s\n", __func__);
 		int worldsize = -1;
-		MPI_Comm_size(MPI_COMM_WORLD, &worldsize);
-
+		MPI_Comm_size(comm, &worldsize);
 		if (worldsize == 1)
 			return MPI_SUCCESS;
+
+		myassert(b_send != MPI_IN_PLACE); // Simplest supported.
 
 		int rank = -1;
 		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -79,6 +80,8 @@ extern "C" {
 		int size_type_send = 0, size_type_recv = 0;
 		MPI_Type_size(type_send, &size_type_send);
 		MPI_Type_size(type_recv, &size_type_recv);
+
+		myassert(nsend * size_type_send == nrecv * size_type_recv); // This is required.
 
 		const int nrequests = 2 * (worldsize - 1);
 		MPI_Request *reqs =
@@ -90,17 +93,20 @@ extern "C" {
 			if (i == rank) {
 				continue;
 			}
-			MPI_Isend(&b_send[rank * nsend * size_type_send],
-			          nsend, type_send, i, rank, comm, &reqs[it++]);
+			MPI_Isend(b_send, nsend, type_send, i, rank, comm, &reqs[it++]);
 		}
 
 		for (int i = 0; i < worldsize; ++i) {
+			void *b_recv_i = &b_recv[i * nrecv * size_type_recv];
+
 			if (i == rank) {
-				continue;
+				memcpy(b_recv_i, b_send, nsend * size_type_send);
+			} else {
+				MPI_Irecv(b_recv_i, nrecv, type_recv, i, i, comm, &reqs[it++]);
 			}
-			MPI_Irecv(&b_recv[i * nrecv * size_type_recv],
-			          nrecv, type_recv, i, i, comm, &reqs[it++]);
 		}
+
+		myassert(it == nrequests);
 
 		MPI_Waitall(nrequests, reqs, MPI_STATUSES_IGNORE);
 

@@ -98,6 +98,34 @@ extern "C" {
 		MPI_Finalize();
 	}
 
+	void __printslice(const double * const mat,
+	                  const size_t rows, const size_t cols,
+	                  const char prefix[64], const char name[64],
+	                  const envinfo * const env
+	) {
+		for (int i = 0; i < env->worldsize; ++i) {
+			if (i == env->rank) {
+				FILE *fp = NULL;
+
+				if (env->rank == 0) {
+					printf("# Printing %s\n", name);
+					fp = get_file(prefix, name, "w+");
+					print_matrix_header(fp, name, env->dim, cols);
+				} else {
+					fp = get_file(prefix, name, "a");
+				}
+				print_matrix_data(fp, mat, rows, cols);
+
+				if (fp != stdout)
+					fclose(fp);
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+	}
+
+#define printmatrix_mpi(mat, rows, cols, prefix, env)	\
+	__printslice(mat, rows, cols, prefix, #mat, env)
+
 
 	// Declare some blas routines.
 	#include <mkl.h>

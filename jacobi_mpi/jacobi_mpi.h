@@ -66,6 +66,7 @@ extern "C" {
 	                         void* b_recv, int nrecv, MPI_Datatype type_recv,
 	                         MPI_Comm comm
 	) {
+		dbprintf("# Call %s\n", __func__);
 		int worldsize = -1;
 		MPI_Comm_size(MPI_COMM_WORLD, &worldsize);
 
@@ -113,6 +114,7 @@ extern "C" {
 	                     MPI_Comm comm
 	) {
 #if P2P == 0
+		dbprintf("# Call MPI_Allgather\n");
 		return MPI_Allgather(b_send, nsend, type_send,
 		                     b_recv, nrecv, type_recv, comm);
 #elif P2P == 1

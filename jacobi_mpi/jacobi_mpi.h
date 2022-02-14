@@ -112,13 +112,14 @@ extern "C" {
 	                     void* b_recv, int nrecv, MPI_Datatype type_recv,
 	                     MPI_Comm comm
 	) {
-#if P2P == 1
-		return jacobi_Allgather(b_send, nsend, type_send,
-		                        b_recv, nrecv, type_recv, comm);
-
-#else
+#if P2P == 0
 		return MPI_Allgather(b_send, nsend, type_send,
 		                     b_recv, nrecv, type_recv, comm);
+#elif P2P == 1
+		return jacobi_Allgather(b_send, nsend, type_send,
+		                        b_recv, nrecv, type_recv, comm);
+#else
+#error Invalid p2p value
 #endif
 
 	}

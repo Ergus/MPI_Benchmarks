@@ -35,9 +35,6 @@ ITS=${ARGS[I]}
 NTASKS=${ARGS[N]}
 CORES=${ARGS[C]}
 
-# special nanos variables needed to set.
-export NANOS6_CONFIG=@PROJECT_BINARY_DIR@/nanos6.toml
-
 # Start run here printing run info header
 echo "# Job: ${SLURM_JOB_NAME} id: ${SLURM_JOB_ID}"
 echo "# Nodes: ${SLURM_JOB_NUM_NODES} Cores_per_node: ${SLURM_JOB_CPUS_PER_NODE}"
@@ -49,9 +46,6 @@ echo "# Walltime: $(squeue -h -j $SLURM_JOBID -o "%l")"
 
 # Print command line arguments
 printargs "# "
-
-# Print nanos6 environment variables
-env | grep NANOS6 | sed -e 's/^#*/# /'
 echo ""
 
 if [ $((SLURM_JOB_NUM_NODES*BS<=DIM)) != 1 ]; then
@@ -70,26 +64,19 @@ for EXE in ${EXES}; do
 	fi
 
 	echo "# Starting executable: ${EXE} $((++EXECOUNT))/${EXES_COUNT}"
-	for DISABLE_REMOTE in false true; do  # namespace enable/disable
 
-		# Run only once for mpi benchmarks
-		[ $DISABLE_REMOTE == true ] && [ ${EXE##*_} == 'mpi' ] && continue
+	COMMAND="srun --cpu-bind=cores --ntasks=${NTASKS} --cpus-per-task=${CORES} ./${EXE} $DIM $BS $ITS"
 
-		export NANOS6_CONFIG_OVERRIDE="cluster.disable_remote=${DISABLE_REMOTE}"
-
-		COMMAND="srun --cpu-bind=cores --ntasks=${NTASKS} --cpus-per-task=${CORES} ./${EXE} $DIM $BS $ITS"
-
-		echo -e "# Starting command: ${COMMAND}"
-		echo "# ======================================"
-		for it in $(seq ${REPEATS}); do
-			echo "# Starting it: ${it} $(date)"
-			start=${SECONDS}
-			${COMMAND}
-			end=${SECONDS}
-			echo "# Ending: $(date)"
-			echo "# Elapsed: $((end-start)) accumulated $((end-init))"
-			echo "# --------------------------------------"
-		done
+	echo -e "# Starting command: ${COMMAND}"
+	echo "# ======================================"
+	for it in $(seq ${REPEATS}); do
+		echo "# Starting it: ${it} $(date)"
+		start=${SECONDS}
+		${COMMAND}
+		end=${SECONDS}
+		echo "# Ending: $(date)"
+		echo "# Elapsed: $((end-start)) accumulated $((end-init))"
+		echo "# --------------------------------------"
 	done
 done
 

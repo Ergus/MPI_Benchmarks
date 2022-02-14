@@ -186,11 +186,9 @@ int main(int argc, char **argv)
 	for (size_t i = 0; i < ITS; ++i) {
 		jacobi_task_mpi(lA, B, x1, x2, &env, i);
 
-		if (env.worldsize > 0) {
-			// Gather x to all
-			MPI_Allgather(x2, env.ldim, MPI_DOUBLE,
-			              x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
-		}
+		// Gather x to all
+		jacobi_Allgather(x2, env.ldim, MPI_DOUBLE,
+		                 x1, env.ldim, MPI_DOUBLE, MPI_COMM_WORLD);
 	}
 
 	stop_timer(&atimer);

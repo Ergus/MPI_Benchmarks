@@ -61,6 +61,68 @@ extern "C" {
 		inst_event(BLAS_EVENT, BLAS_NONE);
 	}
 
+
+	int Allgather_p2p(const void* b_send, int nsend, MPI_Datatype type_send,
+	                  void* b_recv, int nrecv, MPI_Datatype type_recv,
+	                  MPI_Comm comm
+	) {
+		int worldsize = -1;
+		MPI_Comm_size(MPI_COMM_WORLD, &worldsize);
+
+		if (worldsize == 1)
+			return MPI_SUCCESS;
+
+		int rank = -1;
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+		int size_type_send = 0, size_type_recv = 0;
+		MPI_Type_size(type_send, &size_type_send);
+		MPI_Type_size(type_recv, &size_type_recv);
+
+		const int nrequests = 2 * (worldsize - 1);
+		MPI_Request *reqs =
+			(MPI_Request *) malloc(nrequests * sizeof(MPI_Request));
+
+		int it = 0;
+
+		for (int i = 0; i < worldsize; ++i) {
+			if (i == rank) {
+				continue;
+			}
+			MPI_Isend(&b_send[rank * nsend * size_type_send],
+			          nsend, type_send, i, rank, comm, &reqs[it++]);
+		}
+
+		for (int i = 0; i < worldsize; ++i) {
+			if (i == rank) {
+				continue;
+			}
+			MPI_Irecv(&b_recv[i * nrecv * size_type_recv],
+			          nrecv, type_recv, i, i, comm, &reqs[it++]);
+		}
+
+		MPI_Waitall(nrequests, reqs, MPI_STATUSES_IGNORE);
+
+		free(reqs);
+
+		return MPI_SUCCESS;
+	}
+
+	int jacobi_Allgather(const void* b_send, int nsend, MPI_Datatype type_send,
+	                     void* b_recv, int nrecv, MPI_Datatype type_recv,
+	                     MPI_Comm comm
+	) {
+#if P2P == 1
+		return jacobi_Allgather(b_send, nsend, type_send,
+		                        b_recv, nrecv, type_recv, comm);
+
+#else
+		return MPI_Allgather(b_send, nsend, type_send,
+		                     b_recv, nrecv, type_recv, comm);
+#endif
+
+	}
+
 #ifdef __cplusplus
 }
 #endif

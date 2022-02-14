@@ -28,13 +28,28 @@ add_custom_command(
 
 add_library(base STATIC libbase.o)
 
-foreach(SUFIX parallelfor_mpi task_mpi serial)
+set (P2PLIST nop2p p2p)
+foreach(P2P 0 1)
+  list(GET P2PLIST ${P2P} P2PSUFIX)
+  foreach(TESTSUFIX parallelfor task)
 
-  if ((SUFIX STREQUAL "serial") AND (NOT WITH_SERIAL))
-    continue()
-  endif ()
+    set(SOURCE "${TEST}_${TESTSUFIX}_mpi.c")
+    set(EXECUTABLE "${TEST}_${TESTSUFIX}_${P2PSUFIX}_mpi")
 
-  set(EXECUTABLE "${TEST}_${SUFIX}")
+    message("- Add benchmark: ${EXECUTABLE}")
+
+    # jacobi with parallel for
+    add_executable(${EXECUTABLE} "${SOURCE}")
+    target_compile_definitions(${EXECUTABLE} PUBLIC P2P=${P2P})
+    target_link_libraries(${EXECUTABLE} base)
+
+    add_test(NAME "Test_${EXECUTABLE}"
+      COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+  endforeach()
+endforeach()
+
+if (WITH_SERIAL)
+  set(EXECUTABLE "${TEST}_serial")
 
   message("- Add benchmark: ${EXECUTABLE}")
 
@@ -44,7 +59,8 @@ foreach(SUFIX parallelfor_mpi task_mpi serial)
 
   add_test(NAME "Test_${EXECUTABLE}"
     COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
-endforeach()
+endif ()
+
 
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_${TEST}_dim.sh @ONLY)

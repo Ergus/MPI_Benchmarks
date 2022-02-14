@@ -62,9 +62,9 @@ extern "C" {
 	}
 
 
-	int Allgather_p2p(const void* b_send, int nsend, MPI_Datatype type_send,
-	                  void* b_recv, int nrecv, MPI_Datatype type_recv,
-	                  MPI_Comm comm
+	int jacobi_Allgather_p2p(const void* b_send, int nsend, MPI_Datatype type_send,
+	                         void* b_recv, int nrecv, MPI_Datatype type_recv,
+	                         MPI_Comm comm
 	) {
 		int worldsize = -1;
 		MPI_Comm_size(MPI_COMM_WORLD, &worldsize);
@@ -116,8 +116,8 @@ extern "C" {
 		return MPI_Allgather(b_send, nsend, type_send,
 		                     b_recv, nrecv, type_recv, comm);
 #elif P2P == 1
-		return jacobi_Allgather(b_send, nsend, type_send,
-		                        b_recv, nrecv, type_recv, comm);
+		return jacobi_Allgather_p2p(b_send, nsend, type_send,
+		                            b_recv, nrecv, type_recv, comm);
 #else
 #error Invalid p2p value
 #endif

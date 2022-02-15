@@ -42,7 +42,6 @@ void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
 	inst_event(9910002, 0);
 }
 #elif BLAS == 1
-
 void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
             const double xin[dim], double xout[ts]
 ) {
@@ -74,9 +73,9 @@ void init_AB(const envinfo *env, double A[env->ldim][env->dim], double B[env->ld
 	const size_t first_row = env->ldim * env->rank;
 	const size_t dim = env->dim;
 
-#if TASKTYPE == 1
+	#if TASKTYPE == 1
 	#pragma omp parallel for
-#endif // TASKTYPE == 1
+	#endif // TASKTYPE == 1
 	for (size_t i = 0; i < env->ldim; ++i) {
 		init_AB_i(dim, A[i], &B[i], first_row + i);
 	}
@@ -87,9 +86,9 @@ void jacobi_modify(const envinfo *env, double A[env->ldim][env->dim], double B[e
 	const size_t first_row = env->ldim * env->rank;
 	const size_t dim = env->dim;
 
-#if TASKTYPE==1
+	#if TASKTYPE==1
 	#pragma omp parallel for
-#endif // TASKTYPE == 1
+	#endif // TASKTYPE == 1
 	for (size_t i = 0; i < env->ldim; ++i) {
 		jacobi_modify_i(dim, A[i], &B[i], first_row + i);
 	}
@@ -107,9 +106,9 @@ void jacobi_mpi(const envinfo *env,
 
 	const size_t first_row = env->ldim * env->rank;
 
-#if TASKTYPE == 1
+	#if TASKTYPE == 1
 	#pragma omp parallel for
-#endif // TASKTYPE == 1
+	#endif // TASKTYPE == 1
 	for (size_t i = 0; i < env->ldim; ++i) {
 		jacobi(env->dim, 1, &A[i], &B[i], xin, &xout[i]);
 	}

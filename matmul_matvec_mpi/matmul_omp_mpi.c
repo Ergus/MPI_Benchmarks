@@ -19,85 +19,6 @@
 
 #if ISMATVEC // ==================================================
 
-void matmul_base(const double *A, const double *B, double * const C,
-                 size_t ts, size_t dim, size_t colsBC
-) {
-#if BLAS == 0
-	inst_event(9910002, dim);
-	for (size_t i = 0; i < ts; ++i) {
-		C[i] = 0.0;
-
-		for (size_t j = 0; j < dim; ++j) {
-			C[i] += A[i * dim + j] * B[j];
-		}
-	}
-	inst_event(9910002, 0);
-#elif BLAS == 1
-	inst_event(BLAS_EVENT, BLAS_DGEMV);
-
-	myassert(dim < (size_t) INT_MAX);
-
-	const char TR = 'T';
-	const int M = (int) dim;
-	const int N = (int) ts;
-	const double alpha = 1.0;
-	const double beta = 0.0;
-	const int incx = 1;
-
-	dgemv_(&TR, &M, &N, &alpha, A, &M, B, &incx, &beta, C, &incx);
-
-	inst_event(BLAS_EVENT, BLAS_NONE);
-#else // BLAS
-#error No valid BLAS value
-#endif // BLAS
-}
-
-#else // ISMATVEC ================================================
-
-void matmul_base(const double *A, const double *B, double * const C,
-                 size_t ts, size_t dim, size_t colsBC
-) {
-#if BLAS == 0
-	inst_event(9910002, dim);
-	for (size_t i = 0; i < ts; ++i) {
-		for (size_t k = 0; k < colsBC; ++k)
-			C[i * colsBC + k] = 0.0;
-
-		for (size_t j = 0; j < dim; ++j) {
-			const double temp = A[i * dim + j];
-
-			for (size_t k = 0; k < colsBC; ++k) {
-				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
-			}
-		}
-	}
-	inst_event(9910002, 0);
-#elif BLAS == 1
-	inst_event(BLAS_EVENT, BLAS_DGEMM);
-
-	const char TA = 'N';
-	const char TB = 'N';
-	const int M = (int) dim;
-	const int N = (int) ts;
-	const int K = (int) colsBC;
-	const double ALPHA = 1.0;
-	const int LDA = M;
-	const int LDB = K;
-	const double BETA = 0.0;
-	const int LDC = M;
-
-	dgemm_(&TA, &TB, &M, &N, &K, &ALPHA,
-	       B, &LDB,
-	       A, &LDA, &BETA,
-	       C, &LDC);
-
-	inst_event(BLAS_EVENT, BLAS_NONE);
-#else // BLAS
-#error No valid BLAS value
-#endif // BLAS
-}
-
-#endif // ISMATVEC ================================================
 
 void matrix_init(double * const __restrict__ array,
                  const size_t rows, const size_t cols, int seed
@@ -117,6 +38,91 @@ void matrix_init(double * const __restrict__ array,
 		}
 	}
 }
+
+
+void matmul_base(const double *A, const double *B, double * const C,
+                 size_t ts, size_t dim, size_t colsBC
+) {
+	#if BLAS == 0
+	inst_event(9910002, dim);
+	for (size_t i = 0; i < ts; ++i) {
+		C[i] = 0.0;
+
+		for (size_t j = 0; j < dim; ++j) {
+			C[i] += A[i * dim + j] * B[j];
+		}
+	}
+	inst_event(9910002, 0);
+
+	#elif BLAS == 1
+
+	inst_event(BLAS_EVENT, BLAS_DGEMV);
+
+	myassert(dim < (size_t) INT_MAX);
+
+	const char TR = 'T';
+	const int M = (int) dim;
+	const int N = (int) ts;
+	const double alpha = 1.0;
+	const double beta = 0.0;
+	const int incx = 1;
+
+	dgemv_(&TR, &M, &N, &alpha, A, &M, B, &incx, &beta, C, &incx);
+
+	inst_event(BLAS_EVENT, BLAS_NONE);
+	#else // BLAS
+	#error No valid BLAS value
+	#endif // BLAS
+}
+
+#else // ISMATVEC ================================================
+
+void matmul_base(const double *A, const double *B, double * const C,
+                 size_t ts, size_t dim, size_t colsBC
+) {
+	#if BLAS == 0
+	inst_event(9910002, dim);
+	for (size_t i = 0; i < ts; ++i) {
+		for (size_t k = 0; k < colsBC; ++k)
+			C[i * colsBC + k] = 0.0;
+
+		for (size_t j = 0; j < dim; ++j) {
+			const double temp = A[i * dim + j];
+
+			for (size_t k = 0; k < colsBC; ++k) {
+				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+			}
+		}
+	}
+	inst_event(9910002, 0);
+
+	#elif BLAS == 1
+
+	inst_event(BLAS_EVENT, BLAS_DGEMM);
+
+	const char TA = 'N';
+	const char TB = 'N';
+	const int M = (int) dim;
+	const int N = (int) ts;
+	const int K = (int) colsBC;
+	const double ALPHA = 1.0;
+	const int LDA = M;
+	const int LDB = K;
+	const double BETA = 0.0;
+	const int LDC = M;
+
+	dgemm_(&TA, &TB, &M, &N, &K, &ALPHA,
+	       B, &LDB,
+	       A, &LDA, &BETA,
+	       C, &LDC);
+
+	inst_event(BLAS_EVENT, BLAS_NONE);
+	#else // BLAS
+	#error No valid BLAS value
+	#endif // BLAS
+}
+
+#endif // ISMATVEC ================================================
 
 
 #if TASKTYPE == 0 // parallel for

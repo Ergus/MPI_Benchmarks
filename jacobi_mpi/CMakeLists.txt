@@ -39,9 +39,7 @@ foreach(TASKTYPE 0 1 2)
 
 	add_executable(${EXECUTABLE} jacobi_mpi.c)
 	target_compile_definitions(${EXECUTABLE}
-	  PUBLIC P2P=${P2P}
-	  PUBLIC TASKTYPE=${TASKTYPE}
-	  PUBLIC BLAS=${BLAS})
+	  PUBLIC P2P=${P2P} TASKTYPE=${TASKTYPE} BLAS=${BLAS})
 
 	add_test(NAME "Test_${EXECUTABLE}"
 	  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)

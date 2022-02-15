@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 	// Multiplication
 	for (size_t i = 0; i < ITS; ++i) {
 
-#if TASKTYPE == 0
+#if TASKTYPE == 0 // No gather required.
 #elif P2P == 0
 		dbprintf("# Call MPI_Allgather\n");
 		MPI_Allgather(lx, env.ldim, MPI_DOUBLE,

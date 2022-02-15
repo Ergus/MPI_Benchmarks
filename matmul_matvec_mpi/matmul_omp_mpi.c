@@ -17,7 +17,8 @@
 
 #include "benchmarks_mpi.h"
 
-#if ISMATVEC
+#if ISMATVEC // ==================================================
+
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
@@ -51,11 +52,13 @@ void matmul_base(const double *A, const double *B, double * const C,
 #endif // BLAS
 }
 
-#else // ISMATVEC
+#else // ISMATVEC ================================================
+
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
 #if BLAS == 0
+	inst_event(9910002, dim);
 	for (size_t i = 0; i < ts; ++i) {
 		for (size_t k = 0; k < colsBC; ++k)
 			C[i * colsBC + k] = 0.0;
@@ -68,6 +71,7 @@ void matmul_base(const double *A, const double *B, double * const C,
 			}
 		}
 	}
+	inst_event(9910002, 0);
 #elif BLAS == 1
 	inst_event(BLAS_EVENT, BLAS_DGEMM);
 
@@ -92,7 +96,8 @@ void matmul_base(const double *A, const double *B, double * const C,
 #error No valid BLAS value
 #endif // BLAS
 }
-#endif
+
+#endif // ISMATVEC ================================================
 
 void matrix_init(double * const __restrict__ array,
                  const size_t rows, const size_t cols, int seed
@@ -151,8 +156,9 @@ void matmul_mpi(const double *A, const double *B, double * const C,
 		}
 	}
 }
-
-#endif // keep without final else so when not specified get a compilation error.
+#else // TASKTYPE
+#error "Invalid TASKTYPE type."
+#endif // TASKTYPE
 
 int main(int argc, char **argv)
 {

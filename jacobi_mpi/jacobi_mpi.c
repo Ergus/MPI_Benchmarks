@@ -27,11 +27,11 @@ void init_x(double *x, const size_t dim, const double val)
 }
 
 
-#if BLAS == 0
 void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
             const double xin[dim], double xout[ts]
 ) {
-	inst_event(9910002, dim);
+	#if BLAS == 0
+	inst_event(USER_EVENT, USER_JACOBI);
 	for (size_t i = 0; i < ts; ++i) {
 		xout[i] = B[i];
 
@@ -39,12 +39,10 @@ void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
 			xout[i] += A[i][j] * xin[j];
 		}
 	}
-	inst_event(9910002, 0);
-}
-#elif BLAS == 1
-void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
-            const double xin[dim], double xout[ts]
-) {
+	inst_event(USER_EVENT, USER_NONE);
+
+	#elif BLAS == 1
+
 	myassert(dim < (size_t) INT_MAX);
 
 	const char TR = 'T';
@@ -61,10 +59,10 @@ void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
 	dgemv_(&TR, &M, &N, &alpha, (double *)A, &M, xin, &inc, &beta, xout, &inc);
 
 	inst_event(BLAS_EVENT, BLAS_NONE);
+	#else // BLAS
+	#error No valid BLAS value
+	#endif // BLAS
 }
-#else // BLAS
-#error No valid BLAS value
-#endif // BLAS
 
 
 #if TASKTYPE == 0 || TASKTYPE == 1  // Serial and Parallel for.

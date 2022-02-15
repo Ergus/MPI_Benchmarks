@@ -17,9 +17,6 @@
 
 #include "benchmarks_mpi.h"
 
-#if ISMATVEC // ==================================================
-
-
 void matrix_init(double * const __restrict__ array,
                  const size_t rows, const size_t cols, int seed
 ) {
@@ -40,11 +37,14 @@ void matrix_init(double * const __restrict__ array,
 }
 
 
+#if ISMATVEC // ==================================================
+
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
 	#if BLAS == 0
-	inst_event(9910002, dim);
+	inst_event(USER_EVENT, USER_MATVEC);
+	dbprintf("Running matvec no_blas\n");
 	for (size_t i = 0; i < ts; ++i) {
 		C[i] = 0.0;
 
@@ -52,14 +52,13 @@ void matmul_base(const double *A, const double *B, double * const C,
 			C[i] += A[i * dim + j] * B[j];
 		}
 	}
-	inst_event(9910002, 0);
+	inst_event(USER_EVENT, USER_NONE);
 
 	#elif BLAS == 1
 
 	inst_event(BLAS_EVENT, BLAS_DGEMV);
-
+	dbprintf("Running matvec blas\n");
 	myassert(dim < (size_t) INT_MAX);
-
 	const char TR = 'T';
 	const int M = (int) dim;
 	const int N = (int) ts;
@@ -81,7 +80,8 @@ void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
 	#if BLAS == 0
-	inst_event(9910002, dim);
+	inst_event(USER_EVENT, USER_MATMUL);
+	dbprintf("Running matmul no_blas\n");
 	for (size_t i = 0; i < ts; ++i) {
 		for (size_t k = 0; k < colsBC; ++k)
 			C[i * colsBC + k] = 0.0;
@@ -94,12 +94,13 @@ void matmul_base(const double *A, const double *B, double * const C,
 			}
 		}
 	}
-	inst_event(9910002, 0);
+	inst_event(USER_EVENT, USER_NONE);
 
 	#elif BLAS == 1
 
 	inst_event(BLAS_EVENT, BLAS_DGEMM);
-
+	dbprintf("Running matvec blas\n");
+	myassert(dim < (size_t) INT_MAX);
 	const char TA = 'N';
 	const char TB = 'N';
 	const int M = (int) dim;

@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef JACOBI_BASE_H
-#define JACOBI_BASE_H
+#ifndef JACOBI_MPI_H
+#define JACOBI_MPI_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,43 +24,39 @@ extern "C" {
 
 #include "benchmarks_mpi.h"
 
-	void jacobi_base(
-		const double * __restrict__ A,
-		double Bi,
-		const double * __restrict__ xin,
-		double * __restrict__ xouti, size_t dim
-	);
+	void init_AB_i(size_t dim, double Ai[dim], double Bi[1], size_t global_i)
+	{
+		struct drand48_data drand_buf;
+		srand48_r(global_i, &drand_buf);     // Init rng per row.
+		double cum = 0.0, sum = 0.0, x;
 
-	void jacobi(const double *A, const double *B,
-	            const double *xin, double *xout, size_t ts, size_t dim
-	) {
+		for (size_t j = 0; j < dim; ++j) {
+			drand48_r(&drand_buf, &x);
+			Ai[j] = x;
+			cum += fabs(x);
+			sum += x;
+		}
 
-		myassert(dim < (size_t) INT_MAX);
+		const double valii = Ai[global_i];
+		if (signbit(valii)) {
+			Ai[global_i] = valii - cum;
+			Bi[0] = sum - cum;
+		} else {
+			Ai[global_i] = valii + cum;
+			Bi[0] = sum + cum;
+		}
 
-		const char TR = 'T';
-		const int M = (int) dim;
-		const int N = (int) ts;
-		const double alpha = 1.0;
-		const double beta = 1.0;
-		const int inc = 1;
-
-		inst_event(BLAS_EVENT, BLAS_COPY);
-		dcopy_(&N, B, &inc, xout, &inc);
-
-		inst_event(BLAS_EVENT, BLAS_DGEMV);
-		dgemv_(&TR, &M, &N, &alpha, A, &M, xin, &inc, &beta, xout, &inc);
-
-		// for (size_t i = 0; i < ts; ++i) {
-		// 	inst_event(9910002, dim);
-
-		// 	jacobi_base(&A[i * dim], B[i], xin, &xout[i], dim);
-
-		// 	inst_event(9910002, 0);
-		// }
-
-		inst_event(BLAS_EVENT, BLAS_NONE);
 	}
 
+	void jacobi_modify_i(size_t dim, double Ai[dim], double Bi[1], size_t global_i)
+	{
+		const double iAii = 1 / fabs(Ai[global_i]);
+
+		for (size_t j = 0; j < dim; ++j) {
+			Ai[j] = (global_i == j) ? 0.0 : -1.0 * Ai[j] * iAii;
+		}
+		Bi[0] *= iAii;
+	}
 
 	int jacobi_Allgather_p2p(const void* b_send, int nsend, MPI_Datatype type_send,
 	                         void* b_recv, int nrecv, MPI_Datatype type_recv,
@@ -115,25 +111,9 @@ extern "C" {
 		return MPI_SUCCESS;
 	}
 
-	int jacobi_Allgather(const void* b_send, int nsend, MPI_Datatype type_send,
-	                     void* b_recv, int nrecv, MPI_Datatype type_recv,
-	                     MPI_Comm comm
-	) {
-#if P2P == 0
-		dbprintf("# Call MPI_Allgather\n");
-		return MPI_Allgather(b_send, nsend, type_send,
-		                     b_recv, nrecv, type_recv, comm);
-#elif P2P == 1
-		return jacobi_Allgather_p2p(b_send, nsend, type_send,
-		                            b_recv, nrecv, type_recv, comm);
-#else
-#error Invalid p2p value
-#endif
-
-	}
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // JACOBI_BASE_H
+#endif // JACOBI_MPI_H

@@ -13,54 +13,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-set(TEST "jacobi")
+set(TASKLIST serial parallelfor task)
+foreach(TASKTYPE 0 1 2)
+  if ((NOT WITH_SERIAL) AND (TASKTYPE EQUAL 0)) # No serial unless WITH_SERIAL
+    continue()
+  endif()
 
-# CMAKE_C_FLAGS_RELEASE is a space separated string.
-# But add_custom_command needs a list. In cmake lists are strings with ;
-string(REGEX REPLACE "[ \t]+" ";" LIBBASE_FLAGS ${CMAKE_C_FLAGS_RELEASE})
+  list(GET TASKLIST ${TASKTYPE} TASKSUFIX)
 
-# libbase.a
-add_custom_command(
-  OUTPUT libbase.o
-  COMMAND ${ICC} -c ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c ${LIBBASE_FLAGS} -o libbase.o
-  MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/jacobi_base.c
-  COMMENT "Building base object")
+    set(P2PLIST nop2p p2p)
+    foreach(P2P 0 1)
+      list(GET P2PLIST ${P2P} P2PSUFIX)
 
-add_library(base STATIC libbase.o)
+      if ((TASKTYPE EQUAL 0) AND (P2P GREATER 0))
+	continue()
+      endif()
 
-set (P2PLIST nop2p p2p)
-foreach(P2P 0 1)
-  list(GET P2PLIST ${P2P} P2PSUFIX)
-  foreach(TESTSUFIX parallelfor task)
+      set(BLASLIST noblas blas)
+      foreach(BLAS 0 1)
+	list(GET BLASLIST ${BLAS} BLASSUFIX)
 
-    set(SOURCE "${TEST}_${TESTSUFIX}_mpi.c")
-    set(EXECUTABLE "${TEST}_${TESTSUFIX}_${P2PSUFIX}_mpi")
+	set(EXECUTABLE "jacobi_${TASKSUFIX}_${P2PSUFIX}_${BLASSUFIX}_mpi")
 
-    message("- Add benchmark: ${EXECUTABLE}")
+	message("- Add benchmark: ${EXECUTABLE}")
 
-    # jacobi with parallel for
-    add_executable(${EXECUTABLE} "${SOURCE}")
-    target_compile_definitions(${EXECUTABLE} PUBLIC P2P=${P2P})
-    target_link_libraries(${EXECUTABLE} base)
+	add_executable(${EXECUTABLE} jacobi_mpi.c)
+	target_compile_definitions(${EXECUTABLE}
+	  PUBLIC P2P=${P2P}
+	  PUBLIC TASKTYPE=${TASKTYPE}
+	  PUBLIC BLAS=${BLAS})
 
-    add_test(NAME "Test_${EXECUTABLE}"
-      COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+	add_test(NAME "Test_${EXECUTABLE}"
+	  COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
+    endforeach()
   endforeach()
 endforeach()
-
-if (WITH_SERIAL)
-  set(EXECUTABLE "${TEST}_serial")
-
-  message("- Add benchmark: ${EXECUTABLE}")
-
-  # jacobi with parallel for
-  add_executable(${EXECUTABLE} "${EXECUTABLE}.c")
-  target_link_libraries(${EXECUTABLE} base)
-
-  add_test(NAME "Test_${EXECUTABLE}"
-    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 128 8 3)
-endif ()
-
 
 # submiter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)

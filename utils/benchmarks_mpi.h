@@ -86,7 +86,7 @@ void dsyrk_(char *uplo, char *trans, int *n, int *k,
 
 	enum user_values_t {
 		#define EVENT(evt) evt,
-		BLAS_EVENT_VALUES
+		USER_EVENT_VALUES
 		#undef EVENT
 		USER_NEVENTS
 	};
@@ -127,12 +127,13 @@ void dsyrk_(char *uplo, char *trans, int *n, int *k,
 		#undef EVENT
 
 		#define EVENT(evt) #evt,
-		static char *blas_names[BLAS_NEVENTS] = {
-			BLAS_EVENT_VALUES
+
+		static char *user_names[BLAS_NEVENTS] = {
+			USER_EVENT_VALUES
 		};
 
 		static char *blas_names[BLAS_NEVENTS] = {
-			USER_EVENT_VALUES
+			BLAS_EVENT_VALUES
 		};
 		#undef EVENT
 

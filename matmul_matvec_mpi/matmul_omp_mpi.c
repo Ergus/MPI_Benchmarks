@@ -56,7 +56,7 @@ void matmul_base(const double *A, const double *B, double * const C,
 
 	#elif BLAS == 1
 
-	inst_event(BLAS_EVENT, BLAS_DGEMV);
+	inst_event(BLAS_EVENT, BLAS_GEMV);
 	dbprintf("Running matvec blas\n");
 	myassert(dim < (size_t) INT_MAX);
 	const char TR = 'T';
@@ -98,7 +98,7 @@ void matmul_base(const double *A, const double *B, double * const C,
 
 	#elif BLAS == 1
 
-	inst_event(BLAS_EVENT, BLAS_DGEMM);
+	inst_event(BLAS_EVENT, BLAS_GEMM);
 	dbprintf("Running matvec blas\n");
 	myassert(dim < (size_t) INT_MAX);
 	const char TA = 'N';

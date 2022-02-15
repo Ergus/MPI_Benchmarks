@@ -55,7 +55,7 @@ void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
 	inst_event(BLAS_EVENT, BLAS_COPY);
 	dcopy_(&N, B, &inc, xout, &inc);
 
-	inst_event(BLAS_EVENT, BLAS_DGEMV);
+	inst_event(BLAS_EVENT, BLAS_GEMV);
 	dgemv_(&TR, &M, &N, &alpha, (double *)A, &M, xin, &inc, &beta, xout, &inc);
 
 	inst_event(BLAS_EVENT, BLAS_NONE);

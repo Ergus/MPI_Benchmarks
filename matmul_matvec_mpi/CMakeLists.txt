@@ -31,36 +31,42 @@ foreach (ISMATVEC 0;1)
   foreach (TASKTYPEID 0;1)
     list(GET TASKTYPELIST ${TASKTYPEID} TASKTYPE)
 
-    set(EXECUTABLE "${TEST}_${TASKTYPE}_mpi")
-    add_executable(${EXECUTABLE} matmul_omp_mpi.c)
-    target_compile_definitions(${EXECUTABLE}
-      PUBLIC ISMATVEC=${ISMATVEC} TASKTYPE=${TASKTYPEID}
-      )
+    set(BLASLIST noblas blas)
+    foreach(BLAS 0 1)
+      list(GET BLASLIST ${BLAS} BLASSUFIX)
 
-    add_test(NAME Test_${EXECUTABLE}
-      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 256 16 1 1)
+      set(EXECUTABLE "${TEST}_${TASKTYPE}_${BLASSUFIX}_mpi")
 
-    # Create FIXTURES_SETUP for Test_${executable}
-    set_tests_properties(Test_${EXECUTABLE} PROPERTIES
-      ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
-      FIXTURES_SETUP ST_${executable})
+      message("- Add benchmark: ${EXECUTABLE}")
 
-    # Add result test
-    if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
-      add_test(NAME Test_${EXECUTABLE}_results
-	COMMAND ${Python_EXECUTABLE} validate.py
-	${EXECUTABLE}_A.mat ${EXECUTABLE}_B.mat ${EXECUTABLE}_C.mat)
-      set_tests_properties(Test_${EXECUTABLE}_results PROPERTIES
-	FIXTURES_REQUIRED ST_${EXECUTABLE})
-    endif () # Python_FOUND
-  endforeach()
+      add_executable(${EXECUTABLE} matmul_omp_mpi.c)
+      target_compile_definitions(${EXECUTABLE}
+	PUBLIC ISMATVEC=${ISMATVEC} TASKTYPE=${TASKTYPEID} BLAS=${BLAS})
 
-  configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)
-  configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_dim.sh @ONLY)
+      add_test(NAME Test_${EXECUTABLE}
+	COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./${EXECUTABLE} 256 16 1 1)
 
-endforeach ()
+      # Create FIXTURES_SETUP for Test_${executable}
+      set_tests_properties(Test_${EXECUTABLE} PROPERTIES
+	ENVIRONMENT "NANOS6_CONFIG=${CMAKE_BINARY_DIR}/nanos6.toml"
+	FIXTURES_SETUP ST_${executable})
+
+      # Add result test
+      if (Python_FOUND AND Python_Interpreter_FOUND AND Python_NumPy_FOUND)
+	add_test(NAME Test_${EXECUTABLE}_results
+	  COMMAND ${Python_EXECUTABLE} validate.py
+	  ${EXECUTABLE}_A.mat ${EXECUTABLE}_B.mat ${EXECUTABLE}_C.mat)
+	set_tests_properties(Test_${EXECUTABLE}_results PROPERTIES
+	  FIXTURES_REQUIRED ST_${EXECUTABLE})
+      endif () # Python_FOUND
+    endforeach()
+  endforeach ()
+endforeach()
 
 # Submit
+configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_dim.sh @ONLY)
+
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_mn.sh" submit_mn.sh @ONLY)
 configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_mn.sh" submiter_mn.sh @ONLY)
 

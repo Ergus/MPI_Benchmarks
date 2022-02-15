@@ -21,7 +21,18 @@
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
-	inst_event(BLAS_EVENT, BLAS_DGEMM);
+#if BLAS == 0
+	inst_event(9910002, dim);
+	for (size_t i = 0; i < ts; ++i) {
+		C[i] = 0.0;
+
+		for (size_t j = 0; j < dim; ++j) {
+			C[i] += A[i * dim + j] * B[j];
+		}
+	}
+	inst_event(9910002, 0);
+#elif BLAS == 1
+	inst_event(BLAS_EVENT, BLAS_DGEMV);
 
 	myassert(dim < (size_t) INT_MAX);
 
@@ -34,20 +45,30 @@ void matmul_base(const double *A, const double *B, double * const C,
 
 	dgemv_(&TR, &M, &N, &alpha, A, &M, B, &incx, &beta, C, &incx);
 
-	// for (size_t i = 0; i < ts; ++i) {
-	// 	C[i] = 0.0;
-
-	// 	for (size_t j = 0; j < dim; ++j) {
-	// 		C[i] += A[i * dim + j] * B[j];
-	// 	}
-	// }
-
 	inst_event(BLAS_EVENT, BLAS_NONE);
+#else // BLAS
+#error No valid BLAS value
+#endif // BLAS
 }
-#else
+
+#else // ISMATVEC
 void matmul_base(const double *A, const double *B, double * const C,
                  size_t ts, size_t dim, size_t colsBC
 ) {
+#if BLAS == 0
+	for (size_t i = 0; i < ts; ++i) {
+		for (size_t k = 0; k < colsBC; ++k)
+			C[i * colsBC + k] = 0.0;
+
+		for (size_t j = 0; j < dim; ++j) {
+			const double temp = A[i * dim + j];
+
+			for (size_t k = 0; k < colsBC; ++k) {
+				C[i * colsBC + k] += (temp * B[j * colsBC + k]);
+			}
+		}
+	}
+#elif BLAS == 1
 	inst_event(BLAS_EVENT, BLAS_DGEMM);
 
 	const char TA = 'N';
@@ -66,20 +87,10 @@ void matmul_base(const double *A, const double *B, double * const C,
 	       A, &LDA, &BETA,
 	       C, &LDC);
 
-	// for (size_t i = 0; i < ts; ++i) {
-	// 	for (size_t k = 0; k < colsBC; ++k)
-	// 		C[i * colsBC + k] = 0.0;
-
-	// 	for (size_t j = 0; j < dim; ++j) {
-	// 		const double temp = A[i * dim + j];
-
-	// 		for (size_t k = 0; k < colsBC; ++k) {
-	// 			C[i * colsBC + k] += (temp * B[j * colsBC + k]);
-	// 		}
-	// 	}
-	// }
-
 	inst_event(BLAS_EVENT, BLAS_NONE);
+#else // BLAS
+#error No valid BLAS value
+#endif // BLAS
 }
 #endif
 

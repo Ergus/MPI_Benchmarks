@@ -428,7 +428,6 @@ int main(int argc, char *argv[])
 	envinfo env;
 
 	Initialize(&env, &argc, &argv, ROWS, TS);
-	register_blas_events();
 
 	printf("# Initializing data in process: %d\n", env.rank);;
 

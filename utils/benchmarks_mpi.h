@@ -67,22 +67,22 @@ void dsyrk_(char *uplo, char *trans, int *n, int *k,
 
 #if __WITH_EXTRAE // #####################
 
-#include <extrae.h>
-#include "extrae_user_events.h"
+	#include <extrae.h>
+	#include "extrae_user_events.h"
 
-typedef extrae_type_t inst_type_t;
-typedef extrae_value_t inst_value_t;
+	typedef extrae_type_t inst_type_t;
+	typedef extrae_value_t inst_value_t;
 
-#define inst_define_event_type(type,name,nvalues,values,descriptions) \
-	Extrae_define_event_type(type,name,nvalues,values,descriptions)
-#define inst_event(evt, val) Extrae_event(evt, val)
+	#define inst_define_event_type(type,name,nvalues,values,descriptions) \
+		Extrae_define_event_type(type,name,nvalues,values,descriptions)
+	#define inst_event(evt, val) Extrae_event(evt, val)
 
-#define USER_EVENT 9910002
-#define USER_EVENT_VALUES						\
-	EVENT(USER_NONE)							\
-	EVENT(USER_MATVEC)							\
-	EVENT(USER_MATMUL)							\
-	EVENT(USER_JACOBI)
+	#define USER_EVENT 9910002
+	#define USER_EVENT_VALUES						\
+		EVENT(USER_NONE)							\
+		EVENT(USER_MATVEC)							\
+		EVENT(USER_MATMUL)							\
+		EVENT(USER_JACOBI)
 
 	enum user_values_t {
 		#define EVENT(evt) evt,
@@ -91,15 +91,15 @@ typedef extrae_value_t inst_value_t;
 		USER_NEVENTS
 	};
 
-#define BLAS_EVENT 9910003
-#define BLAS_EVENT_VALUES						\
-	EVENT(BLAS_NONE)							\
-	EVENT(BLAS_POTRF)							\
-	EVENT(BLAS_TRSM)							\
-	EVENT(BLAS_GEMM)							\
-	EVENT(BLAS_GEMV)							\
-	EVENT(BLAS_COPY)							\
-	EVENT(BLAS_SYRK)
+	#define BLAS_EVENT 9910003
+	#define BLAS_EVENT_VALUES						\
+		EVENT(BLAS_NONE)							\
+		EVENT(BLAS_POTRF)							\
+		EVENT(BLAS_TRSM)							\
+		EVENT(BLAS_GEMM)							\
+		EVENT(BLAS_GEMV)							\
+		EVENT(BLAS_COPY)							\
+		EVENT(BLAS_SYRK)
 
 	enum blas_values_t {
 		#define EVENT(evt) evt,
@@ -145,11 +145,11 @@ typedef extrae_value_t inst_value_t;
 	typedef size_t inst_type_t;
 	typedef size_t inst_value_t;
 
-#define inst_define_event_type(type,name,nvalues,values,descriptions)
-#define inst_event(evt, val)
+	#define inst_define_event_type(type,name,nvalues,values,descriptions)
+	#define inst_event(evt, val)
 
-#define BLAS_EVENT 0
-#define inst_register_events()
+	#define BLAS_EVENT 0
+	#define inst_register_events()
 
 #endif // __WITH_EXTRAE // #####################
 

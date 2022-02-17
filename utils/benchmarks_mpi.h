@@ -127,7 +127,6 @@ void dsyrk_(char *uplo, char *trans, int *n, int *k,
 		#undef EVENT
 
 		#define EVENT(evt) #evt,
-
 		static char *user_names[BLAS_NEVENTS] = {
 			USER_EVENT_VALUES
 		};

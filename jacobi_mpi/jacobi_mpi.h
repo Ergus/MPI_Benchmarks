@@ -111,6 +111,43 @@ extern "C" {
 		return MPI_SUCCESS;
 	}
 
+	void jacobi(size_t dim, size_t ts, double A[ts][dim], const double B[ts],
+	            const double xin[dim], double xout[ts]
+	) {
+		#if BLAS == 0
+		inst_event(USER_EVENT, USER_JACOBI);
+		for (size_t i = 0; i < ts; ++i) {
+			xout[i] = B[i];
+
+			for (size_t j = 0; j < dim; ++j) {
+				xout[i] += A[i][j] * xin[j];
+			}
+		}
+		inst_event(USER_EVENT, USER_NONE);
+
+		#elif BLAS == 1
+
+		myassert(dim < (size_t) INT_MAX);
+
+		const char TR = 'T';
+		const int M = (int) dim;
+		const int N = (int) ts;
+		const double alpha = 1.0;
+		const double beta = 1.0;
+		const int inc = 1;
+
+		inst_event(BLAS_EVENT, BLAS_COPY);
+		dcopy_(&N, B, &inc, xout, &inc);
+
+		inst_event(BLAS_EVENT, BLAS_GEMV);
+		dgemv_(&TR, &M, &N, &alpha, (double *)A, &M, xin, &inc, &beta, xout, &inc);
+
+		inst_event(BLAS_EVENT, BLAS_NONE);
+		#else // BLAS
+		#error No valid BLAS value
+		#endif // BLAS
+	}
+
 
 #ifdef __cplusplus
 }

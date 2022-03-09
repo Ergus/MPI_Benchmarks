@@ -25,6 +25,7 @@
 #include <alloca.h>
 #include "mpi.h"
 
+#include <sstream>
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -66,13 +67,19 @@ bool string_in(const std::string &str, const std::string &list0, T& ...rest)
 	return (str.compare(list0) == 0) || string_in(str, rest...);
 }
 
+#define types									\
+	hlp(TAG_EXIT)								\
+	hlp(TAG_REDUCE)								\
+	hlp(TAG_SPAWN)								\
+	hlp(TAG_INFO)								\
+	hlp(TAG_INFO_REPLY)
+
 // Macro
 enum msg_tag {
-	TAG_EXIT = 0,      // Exit
-	TAG_REDUCE,        // Delete processes
-	TAG_SPAWN,         // Spawn add new mpi processes
-	TAG_INFO,
-	TAG_INFO_REPLY
+#define hlp(in) in,
+	types
+#undef hlp
+	NTAGS
 };
 
 
@@ -121,10 +128,19 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& out, const msg_t &s)
 	{
-		out << "type: [" << s._type << "]: ";
-		s.printTuple<0, T...>(out);
-		out << " size(" << sizeof(s) << ")";
+		std::string msg_names[] = {
+			#define hlp(in) "\""#in"\"",
+			types
+			#undef hlp
+		};
 
+		std::stringstream oss;
+ 
+		oss << "type: [" << msg_names[s._type] << "]: ";
+		s.printTuple<0, T...>(oss);
+		oss << " size(" << sizeof(s) << ")";
+
+		out << oss.str();
 		return out;
 	}
 };
@@ -171,7 +187,7 @@ protected:
 				continue;
 			}
 
-			std::cout << "Sending msg:" << msg._type << " to:" << i << std::endl;
+			std::cout << "Sending msg:(" << msg << ") to:" << i << std::endl;
 			MPI_Isend(&msg, sizeof(msg), MPI_BYTE, i, msg._type, intra, &reqs[count++]);
 		}
 
@@ -185,7 +201,7 @@ protected:
 
     int spawn_merge(size_t n)                    // spawns n new mpi processes
 	{
-		printf("Process %d: Spawning in world %d\n", wrank, wsize);
+		std::cout << "Process "<< wrank << ": Spawning in world " << wsize << std::endl;
 		for (size_t i = 0; i < n; ++i) {
 
 			MPI_Comm newintra = MPI_COMM_NULL;               // Variable for intracomm
@@ -196,7 +212,7 @@ protected:
 			                             0, intra, &newinter, &errcode);
 
 			if (success == MPI_ERR_SPAWN) {
-				printf("Process %d: Error spawning %zu\n", wrank, i);
+				std::cerr << "Process " << wrank << ": Error spawning " << i << std::endl;
 			}
 
 			MPI_Comm_free(&intra);                           // Free old intracomm before.
@@ -206,7 +222,7 @@ protected:
 			MPI_Comm_size(newintra, &wsize);                 // update wsize
 			MPI_Comm_free(&newinter);                        // Free the created intercomm
 		}
-		printf("Ending spawn in %d\n", wrank);           // Delete this or add in verbose only
+		std::cout << "Process " << wrank << ": Spawned done" << std::endl;
 
 		return MPI_SUCCESS;
 	}
@@ -256,11 +272,11 @@ private:
 		for (int i = 0; i < wsize; ++i) {
 			if (i == wrank) {
 				infos[i] = info_t(TAG_INFO_REPLY, wrank , hostid);
+				continue;
 			}
 			MPI_Request reqsend;
 			MPI_Isend(&msg_info, sizeof(msg_info), MPI_BYTE, i, msg_info._type, intra, &reqsend);
-			MPI_Irecv(&infos[i], sizeof(info_t), MPI_BYTE, i, i, intra, &reqs[count++]);
-
+			MPI_Irecv(&infos[i], sizeof(info_t), MPI_BYTE, i, TAG_INFO_REPLY, intra, &reqs[count++]);
 			MPI_Request_free(&reqsend);
 		}
 
@@ -269,7 +285,7 @@ private:
 		const int ret = MPI_Waitall(count, reqs, status);
 		check_mpi_status(ret, status, count);
 
-		printf("Info: world = %d\n", wsize);
+		std::cout << "Info: world = " << wsize << std::endl;
 		for (int i = 0; i < wsize; ++i) {
 			std::cout << infos[i] << std::endl;
 		}
@@ -386,7 +402,7 @@ private:
 			void *buff = alloca(count);
 
 			// Now receive the message
-			ret = MPI_Recv(&buff, count, MPI_BYTE,
+			ret = MPI_Recv(buff, count, MPI_BYTE,
 			               status.MPI_SOURCE, status.MPI_TAG, intra,
 			               MPI_STATUS_IGNORE);
 			check_mpi(ret);
@@ -394,16 +410,16 @@ private:
 			msg_t<> *msg = reinterpret_cast<msg_t<> *>(buff);
 			const msg_tag type = msg->_type;
 
-			printf("%d<--(%d)--%d\n", wrank, type, status.MPI_SOURCE);
+			std::cout << wrank << "<--("<< *msg << ")--" << status.MPI_SOURCE << "\n";
 
 			switch (type) {
 			case TAG_SPAWN:
-				printf("Process %d: Spawning (world %d)\n", wrank, wsize);
+				std::cout << "Process " << wrank <<": Spawning (world: " << wsize << ")" << "\n";
 				const msg_t<int> *msg_int1 = reinterpret_cast<msg_t<int> *>(buff);
 				spawn_merge(msg_int1->get<0>());
 				break;
 			case TAG_REDUCE:
-				printf("Process %d: Reducing (world %d)\n", wrank, wsize);
+				std::cout << "Process " << wrank <<": Reducing (world: " << wsize << ")" << "\n";
 				const msg_t<int> *msg_int2 = reinterpret_cast<msg_t<int> *>(buff);
 				split_kill(msg_int2->get<0>());
 				break;
@@ -413,7 +429,7 @@ private:
 			case TAG_INFO:
 				info_t info(TAG_INFO_REPLY, wrank , hostid);
 				MPI_Send(&info, sizeof(info), MPI_BYTE, status.MPI_SOURCE, TAG_INFO_REPLY, intra);
-
+				std::cout << wrank << "--("<< info << ")-->" << status.MPI_SOURCE << "\n";
 				break;
 			default:
 				std::cout << "Process: " << wrank
@@ -450,7 +466,7 @@ public:
 
 //================== Manager ==========================
 
-class Manager{
+class Manager {
 private:
     Node_t *Node;
     MPI_Comm parent;

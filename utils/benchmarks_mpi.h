@@ -192,9 +192,9 @@ void Initialize(envinfo * _env, int *argc, char ***argv, size_t dim, size_t ts)
 
 	_env->ts = ts;
 	myassert(_env->ts > 0);
-	modcheck(dim, _env->ts)
+	modcheck(dim, _env->ts);
 
-		myassert(dim >= (size_t)_env->worldsize);	// more rows than task size
+	myassert(dim >= (size_t)_env->worldsize);	// more rows than task size
 	modcheck(dim, _env->worldsize);	// we need to split exactly
 
 	_env->dim = dim;

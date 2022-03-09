@@ -44,7 +44,6 @@ void matmul_base(const double *A, const double *B, double * const C,
 ) {
 	#if BLAS == 0
 	inst_event(USER_EVENT, USER_MATVEC);
-	dbprintf("Running matvec no_blas\n");
 	for (size_t i = 0; i < ts; ++i) {
 		C[i] = 0.0;
 
@@ -57,7 +56,6 @@ void matmul_base(const double *A, const double *B, double * const C,
 	#elif BLAS == 1
 
 	inst_event(BLAS_EVENT, BLAS_GEMV);
-	dbprintf("Running matvec blas\n");
 	myassert(dim < (size_t) INT_MAX);
 	const char TR = 'T';
 	const int M = (int) dim;
@@ -81,7 +79,6 @@ void matmul_base(const double *A, const double *B, double * const C,
 ) {
 	#if BLAS == 0
 	inst_event(USER_EVENT, USER_MATMUL);
-	dbprintf("Running matmul no_blas\n");
 	for (size_t i = 0; i < ts; ++i) {
 		for (size_t k = 0; k < colsBC; ++k)
 			C[i * colsBC + k] = 0.0;
@@ -99,7 +96,6 @@ void matmul_base(const double *A, const double *B, double * const C,
 	#elif BLAS == 1
 
 	inst_event(BLAS_EVENT, BLAS_GEMM);
-	dbprintf("Running matvec blas\n");
 	myassert(dim < (size_t) INT_MAX);
 	const char TA = 'N';
 	const char TB = 'N';
@@ -136,9 +132,13 @@ void matmul_mpi(const double *A, const double *B, double * const C,
 		       (ISMATVEC ? "matvec" : "matmul"), env->rank);
 	}
 
+	const size_t dim = env->dim;
+	const size_t ldim = env->ldim;
+	const size_t ts = env->ts;
+
 	#pragma omp parallel for
-	for (size_t i = 0; i < env->ldim; ++i) {
-		matmul_base(&A[i * env->dim], B, &C[i * colsBC], 1, env->dim, colsBC);
+	for (size_t i = 0; i < ldim; i += ts) {
+		matmul_base(&A[i * dim], B, &C[i * colsBC], ts, dim, colsBC);
 	}
 }
 
@@ -153,13 +153,15 @@ void matmul_mpi(const double *A, const double *B, double * const C,
 	}
 
 	const size_t dim = env->dim;
+	const size_t ldim = env->ldim;
+	const size_t ts = env->ts;
 
 	#pragma omp parallel
 	#pragma omp single
 	{
-		for (size_t l = 0; l < env->ldim; l += env->ts) {
+		for (size_t i = 0; i < ldim; i += ts) {
 			#pragma omp task
-			matmul_base(&A[l * dim], B, &C[l * colsBC], env->ts, dim, colsBC);
+			matmul_base(&A[i * dim], B, &C[i * colsBC], ts, dim, colsBC);
 		}
 	}
 }

@@ -93,7 +93,7 @@ extern "C" {
 		}
 
 		for (int i = 0; i < worldsize; ++i) {
-			void *b_recv_i = &b_recv[i * nrecv * size_type_recv];
+			void *b_recv_i = &((char*)b_recv)[i * nrecv * size_type_recv];
 
 			if (i == rank) {
 				memcpy(b_recv_i, b_send, nsend * size_type_send);

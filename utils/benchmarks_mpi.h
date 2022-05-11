@@ -218,7 +218,7 @@ void Finalize() {
 
 void __printslice(const double * const mat,
                   const size_t rows, const size_t cols,
-                  const char prefix[64], const char name[64],
+                  const char prefix[], const char name[],
                   const envinfo * const env
 ) {
 	for (int i = 0; i < env->worldsize; ++i) {

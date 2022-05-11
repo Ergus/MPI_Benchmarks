@@ -22,8 +22,6 @@
 extern "C" {
 #endif
 
-#include <mkl.h>
-
 #include "benchmarks_mpi.h"
 
 static inline void omp_potrf(int ts, double A[ts][ts])

@@ -44,7 +44,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-add_definitions(_GNU_SOURCE)
+add_definitions(-D_GNU_SOURCE)
 
 # Enable address sanitizer
 if (WITH_ASAN)
@@ -66,7 +66,7 @@ endif ()
 if (WITH_EXTRAE)
   find_package(Extrae REQUIRED COMPONENTS ompitrace)
   if (Extrae_FOUND)
-    add_compile_definitions(__WITH_EXTRAE=1)
+    add_definitions(-D__WITH_EXTRAE=1)
     include_directories(${EXTRAE_INCLUDES})
     link_libraries(${EXTRAE_LIBRARIES})
   endif ()

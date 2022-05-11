@@ -42,7 +42,6 @@ extern "C" {
 
 
 // Declare some blas routines.
-#include <mkl.h>
 #include <limits.h>
 
 void dcopy_(const int *n, const double *dx, const int *incx, double *dy, const int *incy);
@@ -64,6 +63,9 @@ void dtrsm_(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
 void dsyrk_(char *uplo, char *trans, int *n, int *k,
             double *alpha, double *a, int *lda,
             double *beta, double *c, int *ldc);
+
+void dpotrf_(const char *uplo, const int *n, double *a,
+             const int *lda, int *info);
 
 #if __WITH_EXTRAE // #####################
 

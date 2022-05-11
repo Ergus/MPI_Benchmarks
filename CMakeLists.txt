@@ -19,11 +19,26 @@ cmake_minimum_required(VERSION 3.12.4)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+set(CCOMPILER gnu CACHE STRING "C compiler to use gnu or intel")
+set(CCOMPILERVALUES gnu intel)
+set_property(CACHE CCOMPILER PROPERTY STRINGS ${CCOMPILERVALUES})
+
+list(FIND CCOMPILERVALUES ${CCOMPILER} INDEX)
+if(INDEX EQUAL -1)
+  message(FATAL_ERROR "Invalid CCOMPILER value: ${CCOMPILER}")
+endif()
+
+if ("${CCOMPILER}" STREQUAL "intel")
+  find_package(INTEL REQUIRED)
+  add_compile_options(--Wn,-diag-disable=858)
+endif ()
+
 project(mpi_benchmarks)
 
 option(WITH_ASAN "Build tests with address sanitizer" false)
 option(WITH_EXTRAE "Build with Extrae traces support" false)
 option(WITH_SERIAL "Build serial version of the code." false)
+option(WITH_MKL "Use MKL as BLAS library." false)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -69,21 +84,14 @@ link_libraries(OpenMP::OpenMP_C)
 
 find_package(Python MODULE COMPONENTS Interpreter NumPy)
 
-find_package(INTEL REQUIRED)
-add_compile_options(-diag-disable=858)
+# Lapack - MKL
+if (WITH_MKL)
+  set(BLA_VENDOR Intel10_64lp_seq)
+endif ()
 
-# Blas - MKL
-set(BLA_VENDOR Intel10_64lp_seq)
-find_package(BLAS REQUIRED)
-
-find_path(
-  MKL_INCLUDE_DIR mkl.h
-  HINTS ENV MKLROOT
-  PATH_SUFFIXES include)
-
-include_directories(${MKL_INCLUDE_DIR})
-add_link_options(${BLAS_LINKER_FLAGS})
-link_libraries(${BLAS_LIBRARIES})
+find_package(LAPACK REQUIRED)
+add_link_options(${LAPACK_LINKER_FLAGS})
+link_libraries(${LAPACK_LIBRARIES})
 
 # add the subdirectories here
 add_subdirectory(utils/ArgParserC)

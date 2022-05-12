@@ -15,7 +15,7 @@
 
 # 3.9 required to use FindOpenMP
 # 3.12.4 required to use FindPython
-cmake_minimum_required(VERSION 3.12.4)
+cmake_minimum_required(VERSION 3.10)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
@@ -44,7 +44,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-add_compile_definitions(_GNU_SOURCE)
+add_definitions(_GNU_SOURCE)
 
 # Enable address sanitizer
 if (WITH_ASAN)
@@ -90,7 +90,7 @@ if (WITH_MKL)
 endif ()
 
 find_package(LAPACK REQUIRED)
-add_link_options(${LAPACK_LINKER_FLAGS})
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LAPACK_LINKER_FLAGS}")
 link_libraries(${LAPACK_LIBRARIES})
 
 # add the subdirectories here

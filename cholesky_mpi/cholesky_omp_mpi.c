@@ -509,6 +509,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (env.rank == 0) {
+		create_reportable_int("Iterations", 1);
 		create_reportable_int("worldsize", env.worldsize);
 		create_reportable_int("cpu_count", env.cpu_count);
 		create_reportable_int("omp_max_threads", env.maxthreads);

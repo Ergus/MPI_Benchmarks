@@ -30,9 +30,9 @@ add_executable(${executable} cholesky_omp_mpi.c)
 add_test(NAME "Test_${executable}"
   COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ./${executable} 512 16 0)
 
-# submiter
+# submitter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submitter_dim.sh" submitter_dim.sh @ONLY)
 
 # Extrae
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_extrae.sh" submit_extrae.sh @ONLY)

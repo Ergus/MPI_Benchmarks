@@ -47,9 +47,9 @@ foreach(TASKTYPE 0 1 2)
   endforeach()
 endforeach()
 
-# submiter
+# submitter
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_dim.sh" submit_dim.sh @ONLY)
-configure_file("${PROJECT_SOURCE_DIR}/utils/submiter_dim.sh" submiter_dim.sh @ONLY)
+configure_file("${PROJECT_SOURCE_DIR}/utils/submitter_dim.sh" submitter_dim.sh @ONLY)
 
 # Extrae
 configure_file("${PROJECT_SOURCE_DIR}/utils/submit_extrae.sh" submit_extrae.sh @ONLY)

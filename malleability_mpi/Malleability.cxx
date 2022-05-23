@@ -138,7 +138,7 @@ public:
 	{
 		std::stringstream oss;
 
-		oss << "type: [" << msg_names[s._type] << "]: ";
+		oss << msg_names[s._type] << ": ";
 		s.printTuple<0, T...>(oss);
 		oss << " size(" << sizeof(s) << ")";
 
@@ -148,16 +148,21 @@ public:
 
 	int send(int target, MPI_Comm comm)
 	{
+		int wrank;
+		MPI_Comm_rank(comm, &wrank);
+		std::cout << "Process:" << wrank << " --(" << *this << ")--> " << target << std::endl;
 		return MPI_Send(this, sizeof(*this), MPI_BYTE, target, TYPE, comm);
 	}
 
-    int send_to_all(MPI_Comm comm)
+    void send_to_all(MPI_Comm comm)
 	{
 		int wrank, wsize;
 		MPI_Comm_rank(comm, &wrank);   // gets rank in local world
 		MPI_Comm_size(comm, &wsize);   // gets size in local world
 
-		assert(wsize > 1);
+		if (wsize == 1) {
+			return;
+		}
 
 		const int remotes = wsize - 1;
 		// Send unblocking spawn messages to all remotes.
@@ -170,7 +175,7 @@ public:
 				continue;
 			}
 
-			std::cout << "Sending msg:(" << *this << ") to:" << i << std::endl;
+			std::cout << "Process:" << wrank << " --(" << *this << ")--> " << i << std::endl;
 			MPI_Isend(this, sizeof(*this), MPI_BYTE, i, this->_type, comm, &reqs[count++]);
 		}
 
@@ -192,7 +197,6 @@ public:
 
 		free(statuses);
 		free(reqs);
-		return MPI_SUCCESS;
 	}
 };
 
@@ -260,22 +264,27 @@ protected:
 		: _argc(argc), _argv(argv), _parent(parent), _listening(true)
 	{
 		MPI_Comm_dup(MPI_COMM_WORLD, &_intra);            // Creates a duplicated _intracomm
-		MPI_Comm_size(_intra, &_wsize);                    // gets size in local world
-		MPI_Comm_rank(_intra, &_wrank);                    // gets rank in local world
 
 		MPI_Comm_create_errhandler(mpi_error_handler, &_neweh);
 		MPI_Comm_set_errhandler(_intra, _neweh);
 
-		commInfo startcomm = {.intraComm = _intra, .interComm = parent};
+		commInfo startcomm = {.intraComm = _intra, .interComm = _parent};
 		_spawnedCommInfoStack.push(startcomm);
 		gethostname(_hostname.name, HOST_NAME_MAX);
+
+		if (_parent != MPI_COMM_NULL) {
+			MPI_Intercomm_merge(_parent, true,  &_intra);
+		}
+
+		MPI_Comm_size(_intra, &_wsize);                    // gets size in local world
+		MPI_Comm_rank(_intra, &_wrank);                    // gets rank in local world
 
 		std::cout << "Process " << _wrank << ": start" << std::endl;
 	}
 
     int spawn_merge(std::string hostname)       // spawns n new mpi processes
 	{
-		std::cout << "Process " << _wrank << ": Spawning to: " << _hostname << std::endl;
+		std::cout << "Process " << _wrank << ": Spawning to: " << hostname << std::endl;
 
 		MPI_Comm new_intra = MPI_COMM_NULL;               // Variable for _intracomm
 		MPI_Comm newinter = MPI_COMM_NULL;                // Temporal intercomm
@@ -328,6 +337,7 @@ protected:
 			_intra = spawnedCommInfo.intraComm;               // Reassign the _intra to the new one
 
 			_spawnedCommInfoStack.pop();
+			--currsize;
 		}
 
 		if (!willcontinue) {
@@ -341,8 +351,7 @@ protected:
 
 	void print_info()
 	{
-		std::cout << "Process: " << _wrank << "/" << _wsize
-		          << "host:" << _hostname << std::endl;
+		std::cout << "Process: " << _wrank << "/" << _wsize << " host: " << _hostname << std::endl;
 	}
 
 public:
@@ -401,13 +410,14 @@ private:
 				msg.send(i, _intra);
 
 				MPI_Recv(&reply, sizeof(info_rep_t),
-				         MPI_BYTE, i, TAG_INFO_REPLY, _intra, MPI_STATUS_IGNORE );
+				         MPI_BYTE, i, TAG_INFO_REPLY, _intra, MPI_STATUS_IGNORE);
 			}
 		}
 	}
 
     void process(char opt, size_t n)
 	{
+		std::cout<< "Master processing: " << opt << " " << n << std::endl;
 		switch (opt) {
 		case 's':
 			assert(n < _hostList.size());
@@ -416,7 +426,7 @@ private:
 			spawn_merge(_hostList[n]);
 			break;
 		case 'd':
-			assert(n < _wsize - 1);
+			assert(n < _wsize);
 			shrink_t msg_shrink(n);
 			msg_shrink.send_to_all(_intra);
 			shrink_pop(n);
@@ -443,6 +453,11 @@ public:
 		assert(_parent == MPI_COMM_NULL);
 		assert(_wrank == 0);
 		assert(_wsize == 1);
+		std::cout << "Hostlist: ";
+		for (auto const &host : _hostList) {
+			std::cout << host << " ";
+		}
+		std::cout << std::endl;
 	}
 
     ~Node_master()
@@ -452,7 +467,7 @@ public:
 
     void run() override
 	{
-		printf("Starting master\n");
+		printf("Process Master ready\n");
 		size_t value = 0;
 
 		if (_argc > 1) {
@@ -460,7 +475,7 @@ public:
 			while ((opt = getopt(_argc, _argv, "s:d:pih")) != -1) {
 				value = 0;
 				if (strchr("sd", opt) != NULL) {
-					scanf(optarg, "%zu", &value);
+					sscanf(optarg, "%zu", &value);
 				} else if (opt == '?') {
 					std::cerr << "Invalid command line or argument: " << opt << std::endl;
 					continue;
@@ -474,7 +489,7 @@ public:
 				std::cin >> command;
 				value = 0;
 
-				if (command == "spawn", "delete") {
+				if (string_in(command, "spawn", "delete")) {
 					std::cin >> value;
 				} else if (!string_in(command, "info", "exit")) {
 					std::cerr << "Invalid command or argument: " << command << std::endl;
@@ -516,7 +531,7 @@ private:
 			base_t *msg = reinterpret_cast<base_t *>(buff);
 			const msg_tag type = msg->_type;
 
-			std::cout << _wrank << "<--("<< *msg << ")--" << status.MPI_SOURCE << "\n";
+			std::cout << "Process:" << _wrank << " <--(" << *msg << ")-- " << status.MPI_SOURCE << std::endl;
 
 			switch (type) {
 			case TAG_SPAWN:
@@ -548,11 +563,6 @@ public:
     Node_slave(int &argc, char** &argv, MPI_Comm parent)
 		: Node_t(argc, argv, parent)
 	{
-		assert(_parent != MPI_COMM_NULL);
-		MPI_Intercomm_merge(_parent, true,  &_intra);
-
-		MPI_Comm_size(_intra, &_wsize);
-		MPI_Comm_rank(_intra, &_wrank);
 	}
 
     ~Node_slave() {

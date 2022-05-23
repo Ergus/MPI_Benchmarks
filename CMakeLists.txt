@@ -19,20 +19,6 @@ cmake_minimum_required(VERSION 3.10)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-set(CCOMPILER gnu CACHE STRING "C compiler to use gnu or intel")
-set(CCOMPILERVALUES gnu intel)
-set_property(CACHE CCOMPILER PROPERTY STRINGS ${CCOMPILERVALUES})
-
-list(FIND CCOMPILERVALUES ${CCOMPILER} INDEX)
-if(INDEX EQUAL -1)
-  message(FATAL_ERROR "Invalid CCOMPILER value: ${CCOMPILER}")
-endif()
-
-if ("${CCOMPILER}" STREQUAL "intel")
-  find_package(INTEL REQUIRED)
-  add_compile_options(--Wn,-diag-disable=858)
-endif ()
-
 project(mpi_benchmarks)
 
 option(WITH_ASAN "Build tests with address sanitizer" false)
@@ -46,6 +32,10 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_definitions(-D_GNU_SOURCE)
 
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+  add_compile_options(-diag-disable=858)
+endif ()
+
 # Enable address sanitizer
 if (WITH_ASAN)
   message("-- Using ASAN")
@@ -55,7 +45,7 @@ if (WITH_ASAN)
     NAMES asan
     HINTS ENV LIBRARY_PATH LD_LIBRARY_PATH)
 
-  set (ASAN_OPTIONS
+  set(ASAN_OPTIONS
     "\"detect_leaks=0:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1\"")
 
   set (CMAKE_EXE_LINKER_FLAGS

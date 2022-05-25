@@ -37,6 +37,8 @@
 
 #include <slurm/slurm.h>
 
+#include <sys/prctl.h>
+
 #include <cstring>
 
 void mpi_error_handler(MPI_Comm *comm, int *err, ... )
@@ -150,7 +152,7 @@ public:
 	{
 		int wrank;
 		MPI_Comm_rank(comm, &wrank);
-		std::cout << "Process:" << wrank << " --(" << *this << ")--> " << target << std::endl;
+		std::cout << "\tProcess:" << wrank << " --(" << *this << ")--> " << target << std::endl;
 		return MPI_Send(this, sizeof(*this), MPI_BYTE, target, TYPE, comm);
 	}
 
@@ -175,12 +177,11 @@ public:
 				continue;
 			}
 
-			std::cout << "Process:" << wrank << " --(" << *this << ")--> " << i << std::endl;
-			MPI_Isend(this, sizeof(*this), MPI_BYTE, i, this->_type, comm, &reqs[count++]);
+			std::cout << "\tProcess:" << wrank << " --(" << *this << ")--> " << i << std::endl;
+			MPI_Issend(this, sizeof(*this), MPI_BYTE, i, this->_type, comm, &reqs[count++]);
 		}
 
 		assert(count == remotes);
-
 		const int ret = MPI_Waitall(count, reqs, statuses);
 
 		if (MPI_ERR_IN_STATUS == ret) {
@@ -251,19 +252,22 @@ protected:
 		MPI_Comm interComm;
 	};
 
-    MPI_Comm _intra, _parent;           // persistent communicators
+    MPI_Comm _intra = MPI_COMM_NULL, _parent = MPI_COMM_NULL;   // persistent communicators
     int _wsize, _wrank;                 // environment MPI vars
     int _argc;                          // command line arguments number
     char** _argv;                       // command line arguments vars
     bool _listening;                    // process will listen by default
+	const pid_t _pid;                   // pid
     hostname_t _hostname;               // id of running host
 	MPI_Errhandler _neweh;
+
 	std::stack<commInfo> _spawnedCommInfoStack;
 
     Node_t(int &argc, char** &argv, MPI_Comm parent)
-		: _argc(argc), _argv(argv), _parent(parent), _listening(true)
+		: _argc(argc), _argv(argv), _parent(parent), _pid(getpid()), _listening(true)
 	{
 		MPI_Comm_dup(MPI_COMM_WORLD, &_intra);            // Creates a duplicated _intracomm
+		//MPI_Barrier(_intra);
 
 		MPI_Comm_create_errhandler(mpi_error_handler, &_neweh);
 		MPI_Comm_set_errhandler(_intra, _neweh);
@@ -279,7 +283,12 @@ protected:
 		MPI_Comm_size(_intra, &_wsize);                    // gets size in local world
 		MPI_Comm_rank(_intra, &_wrank);                    // gets rank in local world
 
-		std::cout << "Process " << _wrank << ": start" << std::endl;
+		char newname[16];
+		sprintf(newname, "mallea_%d", _wrank);
+
+		prctl(PR_SET_NAME, newname, 0, 0, 0);
+
+		print_info();
 	}
 
     int spawn_merge(std::string hostname)       // spawns n new mpi processes
@@ -346,12 +355,17 @@ protected:
 		}
 
 		MPI_Comm_size(_intra, &_wsize);                       // update _wsize
+
+		std::cout << "Process " << _wrank <<": Delete done" << "\n";
 		return willcontinue;
 	}
 
 	void print_info()
 	{
-		std::cout << "Process: " << _wrank << "/" << _wsize << " host: " << _hostname << std::endl;
+		std::cout << "Process: " << _wrank << "/" << _wsize
+		          << " host: " << _hostname
+		          << " pid: " << _pid
+		          << std::endl;
 	}
 
 public:
@@ -399,7 +413,7 @@ private:
 		return nodelist_vector;
 	}
 
-    int master_info()
+    void master_info()
 	{
 		info_t msg;
 		info_rep_t reply;
@@ -420,26 +434,36 @@ private:
 		std::cout<< "Master processing: " << opt << " " << n << std::endl;
 		switch (opt) {
 		case 's':
-			assert(n < _hostList.size());
-			spawn_t msg_spawn(_hostList[n]);
-			msg_spawn.send_to_all(_intra);
-			spawn_merge(_hostList[n]);
-			break;
+		{
+			if (n < _hostList.size()) {
+				spawn_t msg_spawn(_hostList[n]);
+				msg_spawn.send_to_all(_intra);
+				spawn_merge(_hostList[n]);
+			} else {
+				std::cout << "Can't spawn in host " << n << " with " << _hostList.size() << " hosts only" << std::endl;
+			}
+		}
+		break;
 		case 'd':
-			assert(n < _wsize);
-			shrink_t msg_shrink(n);
-			msg_shrink.send_to_all(_intra);
-			shrink_pop(n);
-			break;
+			if (n < _wsize) {
+				shrink_t msg_shrink(n);
+				msg_shrink.send_to_all(_intra);
+				shrink_pop(n);
+			} else {
+				std::cout << "Can't delete " << n << " processes with " << _wsize << " only" << std::endl;
+			}
+		break;
 		case 'i':
-			printf("This will print actual status information\n");
+			std::cout << "This will print actual status information" << std::endl;
 			master_info();
 			break;
 		case 'e':
+		{
 			msg_t<TAG_EXIT> msg_stop;
 			msg_stop.send_to_all(_intra);
 			_listening = false;
-			break;
+		}
+		break;
 		case '?':
 			printf("Option '%c' not recognized\n", opt);
 			MPI_Abort(_intra, MPI_ERR_OTHER);
@@ -448,11 +472,10 @@ private:
 
 public:
     Node_master(int &argc, char** &argv, MPI_Comm parent)
-		:Node_t(argc, argv, parent), _hostList(Node_master::getHostList())
+		: Node_t(argc, argv, parent), _hostList(Node_master::getHostList())
 	{
 		assert(_parent == MPI_COMM_NULL);
 		assert(_wrank == 0);
-		assert(_wsize == 1);
 		std::cout << "Hostlist: ";
 		for (auto const &host : _hostList) {
 			std::cout << host << " ";
@@ -467,7 +490,7 @@ public:
 
     void run() override
 	{
-		printf("Process Master ready\n");
+		printf("Process %d(master): listening\n", _wrank);
 		size_t value = 0;
 
 		if (_argc > 1) {
@@ -512,7 +535,7 @@ private:
 		int count;
 		MPI_Status status;
 
-		printf("Process %d listening\n", _wrank);
+		printf("Process %d: listening\n", _wrank);
 
 		while (_listening) {
 			// Prove the message first
@@ -531,25 +554,31 @@ private:
 			base_t *msg = reinterpret_cast<base_t *>(buff);
 			const msg_tag type = msg->_type;
 
-			std::cout << "Process:" << _wrank << " <--(" << *msg << ")-- " << status.MPI_SOURCE << std::endl;
+			std::cout << "\tProcess:" << _wrank << " <--(" << *msg << "("<< count<<"))-- " << status.MPI_SOURCE << std::endl;
 
 			switch (type) {
 			case TAG_SPAWN:
+			{
 				const spawn_t *msg_spawn = reinterpret_cast<spawn_t *>(buff);
 				spawn_merge(msg_spawn->get<0>());
-				break;
+			}
+			break;
 			case TAG_SHRINK:
+			{
 				const shrink_t *msg_shrink = reinterpret_cast<shrink_t *>(buff);
 				_listening = shrink_pop(msg_shrink->get<0>());
-				break;
+			}
+			break;
 			case TAG_EXIT:
 				_listening = false;
 				break;
 			case TAG_INFO:
+			{
 				print_info();
 				info_rep_t reply;
 				reply.send(status.MPI_SOURCE, _intra);
-				break;
+			}
+			break;
 			default:
 				std::cout << "Process: " << _wrank
 				          << " received unknown message type: " << type
@@ -573,18 +602,17 @@ public:
 int main(int argc, char** argv)
 {
     MPI_Comm parent;
-    int local_wsize, local_wrank;
+    int local_wrank;
 
 	int provided;
 	MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 
 	if (provided != MPI_THREAD_MULTIPLE) {
-		printf("Error thread provided=%d expected=%d\n", provided, MPI_THREAD_MULTIPLE);
+		fprintf(stderr, "Error thread provided=%d expected=%d\n", provided, MPI_THREAD_MULTIPLE);
 		MPI_Abort(MPI_COMM_WORLD, MPI_ERR_OTHER);
 	}
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &local_wrank); // local world rank
-	MPI_Comm_size(MPI_COMM_WORLD, &local_wsize); // local world size
 	MPI_Comm_get_parent(&parent);                // Parent to decide
 
 	Node_t *_singleton;
@@ -599,7 +627,7 @@ int main(int argc, char** argv)
 	delete _singleton;
 	_singleton = nullptr;
 	MPI_Finalize();
-	printf("Exiting %d in world %d\n",local_wrank,local_wsize);
+	printf("Exiting %d after MPI_Finalize\n", getpid());
 
 	return 0;
 }

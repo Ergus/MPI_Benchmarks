@@ -41,6 +41,9 @@
 
 #include <cstring>
 
+static_assert(_GNU_SOURCE);
+#include <sched.h>
+
 void mpi_error_handler(MPI_Comm *comm, int *err, ... )
 {
 	const int ret = *err;
@@ -70,6 +73,18 @@ template<typename... T>
 bool string_in(const std::string &str, const std::string &list0, T& ...rest)
 {
 	return (str.compare(list0) == 0) || string_in(str, rest...);
+}
+
+std::string affinityToStr(const cpu_set_t mask)
+{
+	std::string ret;
+
+    const long nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    for (long i = 0; i < nproc; ++i) {
+		ret += (CPU_ISSET(i, &mask) ? "1" : "0");
+    }
+
+	return ret;
 }
 
 #define types									\
@@ -260,6 +275,7 @@ protected:
 	const pid_t _pid;                   // pid
     hostname_t _hostname;               // id of running host
 	MPI_Errhandler _neweh;
+	cpu_set_t _mask;
 
 	std::stack<commInfo> _spawnedCommInfoStack;
 
@@ -286,7 +302,14 @@ protected:
 		char newname[16];
 		sprintf(newname, "mallea_%d", _wrank);
 
+		// Change process name
 		prctl(PR_SET_NAME, newname, 0, 0, 0);
+
+		// Set process affinity
+		if (sched_getaffinity(_pid, sizeof(_mask), &_mask) < 0) {
+			perror("sched_getaffinity");
+			MPI_Abort(_intra, MPI_ERR_OTHER);
+		}
 
 		print_info();
 	}
@@ -365,7 +388,7 @@ protected:
 		std::cout << "Process: " << _wrank << "/" << _wsize
 		          << " host: " << _hostname
 		          << " pid: " << _pid
-		          << std::endl;
+		          << " affinity: " << affinityToStr(_mask) << std::endl;
 	}
 
 public:
@@ -595,7 +618,7 @@ public:
 	}
 
     ~Node_slave() {
-		printf("Killing slave %d.\n", _wrank);
+		printf("Deleting slave %d.\n", _wrank);
 	}
 };
 
